@@ -15,6 +15,7 @@ const state = {
 }
 
 let VOLUME_THRESHOLD = 0.018
+let autoScroll = false
 const SILENCE_DELAY_MS = 400
 const SCROLL_SPEED_BASE = 0.1
 let fontSize = 16  // default font size in px
@@ -125,7 +126,8 @@ let scrollPos = 0
 function scrollLoop() {
   if (!state.isRunning) return
   const paused = state.isPaused || state.isHoverPaused
-  if (state.isSpeaking && !paused) {
+  const shouldScroll = autoScroll ? !paused : (state.isSpeaking && !paused)
+  if (shouldScroll) {
     const maxScroll = scrollVP.scrollHeight - scrollVP.clientHeight
     if (scrollPos < maxScroll - 10) {
       scrollPos += SCROLL_SPEED_BASE * state.scrollSpeed
@@ -144,6 +146,15 @@ scrollVP.addEventListener('scroll', () => {
 
 // ── Mic ────────────────────────────────────────────────────
 async function startMic() {
+  // In auto-scroll mode — skip mic, just scroll
+  if (autoScroll) {
+    state.isRunning = true
+    state.isSpeaking = false
+    setMicState('auto', 'Auto')
+    scrollLoop()
+    return
+  }
+
   try {
     state.micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
   } catch(e) { setMicState('error', 'Mic blocked'); return }
@@ -200,8 +211,11 @@ function stopMic() {
 
 function setMicState(type, label) {
   statusText.textContent = label
-  micRing.className = 'mic-ring' + (type === 'listening' ? '' : type === 'error' ? ' error' : ' paused')
-  idleDot.className = 'idle-dot' + (type === 'listening' ? ' listening' : type === 'waiting' ? '' : ' paused')
+  micRing.className = 'mic-ring' + (type === 'listening' || type === 'auto' ? '' : type === 'error' ? ' error' : ' paused')
+  idleDot.className = 'idle-dot' + (type === 'listening' || type === 'auto' ? ' listening' : type === 'waiting' ? '' : ' paused')
+  // Auto-scroll: purple tint
+  micRing.style.borderColor = type === 'auto' ? '#818cf8' : ''
+  document.querySelector('.mic-core').style.background = type === 'auto' ? '#818cf8' : ''
 }
 
 function togglePause() {
@@ -285,11 +299,9 @@ window.electronAPI.onConfigUpdate((cfg) => {
     const i = SPEEDS.indexOf(cfg.scrollSpeed)
     if (i !== -1) setSpeed(i)
   }
-  if (cfg.threshold !== undefined) {
-    VOLUME_THRESHOLD = cfg.threshold
-    console.log('Threshold updated:', cfg.threshold, '(' + (20 * Math.log10(cfg.threshold)).toFixed(1) + ' dB)')
-  }
+  if (cfg.threshold !== undefined) VOLUME_THRESHOLD = cfg.threshold
   if (cfg.mode !== undefined) setupMouseBehavior(cfg.mode)
+  if (cfg.autoScroll !== undefined) autoScroll = cfg.autoScroll
 })
 
 // ── Events ─────────────────────────────────────────────────
@@ -348,6 +360,7 @@ loadScripts()
 window.electronAPI.getConfig().then(cfg => {
   if (cfg.scrollSpeed) { const i = SPEEDS.indexOf(cfg.scrollSpeed); if (i !== -1) setSpeed(i) }
   if (cfg.threshold) VOLUME_THRESHOLD = cfg.threshold
+  if (cfg.autoScroll) autoScroll = cfg.autoScroll
   setupMouseBehavior(cfg.mode || 'notch')
 })
 

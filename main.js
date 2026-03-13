@@ -12,7 +12,9 @@ let isSettingsVisible = false
 const CONFIG_PATH = path.join(os.homedir(), '.teleprompter-config.json')
 function loadConfig() {
   try { return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) } catch(e) {}
-  return { scrollSpeed: 1, threshold: 0.018, screenshareHidden: true, mode: 'notch', opacity: 1 }
+  return { scrollSpeed: 1, threshold: 0.018, screenshareHidden: true, mode: 'notch', opacity: 1, autoScroll: false }
+  // screenshareHidden: true = hide on screen share ON by default
+  // autoScroll: false = voice input ON by default
 }
 function saveConfig(c) { fs.writeFileSync(CONFIG_PATH, JSON.stringify(c, null, 2)) }
 let config = loadConfig()

@@ -101,6 +101,8 @@
     /* Hidden settings body */
     #settings-body { transition: opacity 0.2s; }
     #settings-body.hidden { opacity: 0; pointer-events: none; height: 0; overflow: hidden; }
+
+    .switch-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 14px; }
   </style>
 </head>
 <body>
@@ -138,6 +140,14 @@
       </div>
       <div class="slider-row">
         <input type="range" id="opacity-slider" min="20" max="100" step="5" value="100">
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Scroll mode -->
+      <div class="row">
+        <span class="row-label">Voice Input</span>
+        <label class="switch"><input type="checkbox" id="autoscroll-toggle" checked><span class="sw"></span></label>
       </div>
 
       <div class="divider"></div>
@@ -210,6 +220,7 @@
     document.getElementById('threshold-mark').style.left = tv + '%'
 
     document.getElementById('screenshare-toggle').checked = !!c.screenshareHidden
+    document.getElementById('autoscroll-toggle').checked = !c.autoScroll
 
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === (c.mode || 'notch')))
 
@@ -238,6 +249,10 @@
     const v = +e.target.value
     document.getElementById('opacity-display').textContent = v + '%'
     window.electronAPI.setConfig({ opacity: v / 100 })
+  })
+
+  document.getElementById('autoscroll-toggle').addEventListener('change', e => {
+    window.electronAPI.setConfig({ autoScroll: !e.target.checked })
   })
 
   document.getElementById('screenshare-toggle').addEventListener('change', e => {
