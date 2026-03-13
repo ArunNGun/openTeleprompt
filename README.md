@@ -67,7 +67,15 @@ Make the teleprompter semi-transparent so you can see through it to your camera 
 | Apple Silicon (M1/M2/M3/M4) | `OpenTeleprompter-1.0.0-arm64.dmg` |
 | Intel Mac | `OpenTeleprompter-1.0.0.dmg` |
 
-> **First launch:** macOS may show a security warning since the app isn't notarized yet. Right-click → Open to bypass it.
+> **First launch on macOS:** Since the app isn't notarized yet, macOS will block it on double-click. Here's how to open it:
+>
+> **Option 1 (easiest):** Right-click the app → **Open** → click **Open** in the dialog.
+>
+> **Option 2 (terminal):** Run this once after installing:
+> ```bash
+> xattr -cr /Applications/OpenTeleprompter.app
+> ```
+> After that, it opens normally every time.
 
 ---
 

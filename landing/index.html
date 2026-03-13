@@ -533,6 +533,29 @@
     .dl-sub { font-size: 11px; color: var(--dim); }
     .cta-note { font-size: 12px; color: var(--dim); }
 
+    /* ── INSTALL STEPS ── */
+    .install-steps {
+      max-width: 520px; margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      padding: 24px 28px;
+      text-align: left;
+    }
+    .install-grid { display: flex; flex-direction: column; gap: 12px; }
+    .install-step {
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .install-num {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--accent-dim); border: 1px solid rgba(129,140,248,0.3);
+      color: var(--accent); font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .install-text { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .install-text strong { color: var(--text); font-weight: 600; }
+
     /* ── FOOTER ── */
     .footer-wrap {
       border-top: 1px solid var(--border);
@@ -962,7 +985,26 @@
       <span class="dl-sub">x64 · macOS 13+</span>
     </a>
   </div>
-  <p class="cta-note reveal" style="transition-delay:0.4s">On first launch, right-click → Open to bypass the macOS security prompt.</p>
+  <div class="reveal install-steps" style="transition-delay:0.4s">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;font-weight:600">First launch instructions</p>
+    <div class="install-grid">
+      <div class="install-step">
+        <span class="install-num">1</span>
+        <span class="install-text">Mount the DMG and drag <strong>OpenTeleprompter</strong> to Applications</span>
+      </div>
+      <div class="install-step">
+        <span class="install-num">2</span>
+        <span class="install-text"><strong>Right-click</strong> the app → <strong>Open</strong> (don't double-click)</span>
+      </div>
+      <div class="install-step">
+        <span class="install-num">3</span>
+        <span class="install-text">Click <strong>Open</strong> in the security dialog — done, it opens normally from now on</span>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--dim);margin-top:16px">
+      Or run <code style="background:var(--surface);padding:2px 8px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px">xattr -cr /Applications/OpenTeleprompter.app</code> in Terminal to clear the quarantine flag instantly.
+    </p>
+  </div>
 </section>
 
 <!-- FOOTER -->
