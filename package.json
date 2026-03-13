@@ -1,10 +1,12 @@
 {
   "name": "open-teleprompter",
-  "version": "0.2.0",
-  "private": true,
+  "version": "1.0.0",
+  "description": "Voice-activated macOS teleprompter that lives in the notch",
   "main": "main.js",
+  "private": true,
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "launch": "open node_modules/electron/dist/Electron.app --args $(pwd)"
   },
   "devDependencies": {
     "electron": "^34.0.0"
