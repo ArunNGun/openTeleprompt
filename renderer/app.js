@@ -26,11 +26,13 @@ let speedIndex = 3
 // ── DOM ────────────────────────────────────────────────────
 const island = document.getElementById('island')
 const scrollVP = document.getElementById('scroll-viewport')
+
 const scriptText = document.getElementById('script-text')
 const statusText = document.getElementById('status-text')
 const micRing = document.getElementById('mic-ring')
 const speedVal = document.getElementById('speed-val')
 const scriptInput = document.getElementById('script-input')
+const scriptStats = document.getElementById('script-stats')
 const volBar = document.getElementById('vol-bar')
 const volLabel = document.getElementById('vol-label')
 const idleDot = document.getElementById('idle-dot')
@@ -95,6 +97,7 @@ function saveCurrentScript() {
 function loadScript(i) {
   state.currentScriptIndex = i
   scriptInput.value = state.scripts[i].text
+  updateStats(state.scripts[i].text)
   renderScriptList()
 }
 
@@ -106,6 +109,17 @@ function deleteScript(i) {
 }
 
 
+
+// ── Word count + read time ─────────────────────────────────
+function updateStats(text) {
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0
+  const mins = Math.ceil(words / 130)
+  const secs = Math.round((words / 130) * 60)
+  const timeStr = secs < 60 ? `${secs}s` : `${Math.floor(secs/60)}m ${secs%60}s`
+  scriptStats.innerHTML = words
+    ? `<span>${words} words</span><span>~${timeStr} at 130 WPM</span>`
+    : ''
+}
 
 // ── Build script ───────────────────────────────────────────
 function buildScript(text) {
@@ -132,10 +146,11 @@ function scrollLoop() {
     if (scrollPos < maxScroll - 10) {
       scrollPos += SCROLL_SPEED_BASE * state.scrollSpeed
       scrollPos = Math.min(scrollPos, maxScroll)
-      // Use scrollTo with exact float — browsers handle sub-pixel smoothly
       scrollVP.scrollTo({ top: scrollPos })
     }
   }
+
+
   state.scrollAnimFrame = requestAnimationFrame(scrollLoop)
 }
 
@@ -341,8 +356,11 @@ document.getElementById('btn-font-down').addEventListener('click', () => setFont
 document.getElementById('btn-new-script').addEventListener('click', () => {
   state.currentScriptIndex = -1
   scriptInput.value = ''
+  updateStats('')
   scriptInput.focus()
 })
+
+scriptInput.addEventListener('input', () => updateStats(scriptInput.value))
 
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && document.activeElement !== scriptInput) { e.preventDefault(); togglePause() }

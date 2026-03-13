@@ -156,6 +156,60 @@ html, body {
   padding: 10px 12px 6px;
   gap: 6px;
 }
+
+/* ── Progress bar ────────────────────────────────────────── */
+#progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0%;
+  background: linear-gradient(to right, #818cf8, #22c55e);
+  border-radius: 0 2px 2px 0;
+  z-index: 10;
+  transition: width 0.1s linear;
+}
+
+/* ── Countdown overlay ───────────────────────────────────── */
+#countdown-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10,10,10,0.85);
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+#countdown-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+#countdown-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 56px;
+  font-weight: 800;
+  color: #fff;
+  animation: pop 0.9s ease-out;
+}
+@keyframes pop {
+  0%   { transform: scale(1.4); opacity: 0; }
+  20%  { transform: scale(1);   opacity: 1; }
+  80%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+
+#script-stats {
+  padding: 4px 16px 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.2);
+  display: flex;
+  gap: 10px;
+}
 .view-title {
   flex: 1;
   font-size: 12px;
