@@ -245,6 +245,11 @@
   })
 
   async function init() {
+    // Update mode label for Windows (no physical notch)
+    if (window.electronAPI.platform === 'win32') {
+      const notchBtn = document.getElementById('mode-notch')
+      if (notchBtn) notchBtn.textContent = 'Top Bar'
+    }
     const cfg = await window.electronAPI.getConfig()
     applyConfig(cfg)
     await populateMics()

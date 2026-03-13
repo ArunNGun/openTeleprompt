@@ -1,25 +1,27 @@
 {
   "name": "open-teleprompter",
   "version": "1.1.0",
-  "description": "Voice-activated macOS teleprompter that lives in the notch",
+  "description": "Voice-activated teleprompter for Mac and Windows",
   "main": "main.js",
   "private": true,
   "scripts": {
     "start": "electron .",
     "launch": "open node_modules/electron/dist/Electron.app --args $(pwd)",
-    "build": "electron-builder --mac dmg"
+    "build": "electron-builder --mac dmg",
+    "build:win": "electron-builder --win nsis",
+    "build:all": "electron-builder --mac dmg --win nsis"
   },
   "build": {
     "appId": "com.arungun.openteleprompt",
     "productName": "OpenTeleprompter",
-    "icon": "icon.icns",
     "files": [
       "main.js",
       "preload.js",
       "renderer/**/*",
       "icon.png",
       "tray-icon.png",
-      "tray-icon@2x.png"
+      "tray-icon@2x.png",
+      "icon.ico"
     ],
     "mac": {
       "category": "public.app-category.productivity",
@@ -37,6 +39,17 @@
         { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
       ],
       "window": { "width": 540, "height": 380 }
+    },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64", "ia32"] }],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "OpenTeleprompter"
     }
   },
   "devDependencies": {

@@ -65,6 +65,7 @@ function saveScripts(scripts) { fs.writeFileSync(SCRIPTS_PATH, JSON.stringify(sc
 // ── Prompter window ────────────────────────────────────────
 function createPrompterWindow() {
   const { width } = screen.getPrimaryDisplay().bounds
+  const isMac = process.platform === 'darwin'
   const isNotch = config.mode !== 'classic'
 
   prompterWin = new BrowserWindow({
@@ -139,11 +140,18 @@ function createSettingsWindow(x, y) {
 function showSettings() {
   // Always recompute position from current tray bounds
   const trayBounds = tray.getBounds()
-  const { width: sw } = screen.getPrimaryDisplay().bounds
+  const { width: sw, height: sh } = screen.getPrimaryDisplay().bounds
   const WIN_W = 320
+  const WIN_H = 380
   let x = Math.round(trayBounds.x + trayBounds.width / 2 - WIN_W / 2)
   x = Math.max(8, Math.min(x, sw - WIN_W - 8))
-  const y = trayBounds.y + trayBounds.height + 4
+  // On Windows taskbar is at bottom — open settings above the tray icon
+  let y
+  if (process.platform === 'win32') {
+    y = trayBounds.y - WIN_H - 4
+  } else {
+    y = trayBounds.y + trayBounds.height + 4
+  }
 
   if (!settingsWin) {
     createSettingsWindow(x, y)
@@ -165,11 +173,30 @@ function toggleSettings() {
 
 // ── Tray ───────────────────────────────────────────────────
 function createTray() {
-  const icon = nativeImage.createFromPath(path.join(__dirname, 'tray-icon.png'))
-  icon.setTemplateImage(true)  // auto light/dark switching
+  let icon
+  if (process.platform === 'win32') {
+    // Windows uses .ico for tray
+    icon = nativeImage.createFromPath(path.join(__dirname, 'icon.ico'))
+  } else {
+    // macOS uses template PNG for auto light/dark switching
+    icon = nativeImage.createFromPath(path.join(__dirname, 'tray-icon.png'))
+    icon.setTemplateImage(true)
+  }
   tray = new Tray(icon)
-  tray.setToolTip('Teleprompter — click for settings')
-  tray.on('click', toggleSettings)
+  tray.setToolTip('OpenTeleprompter — click for settings')
+  // Windows: left-click doesn't fire 'click' reliably, use double-click + right-click menu
+  if (process.platform === 'win32') {
+    const { Menu, MenuItem } = require('electron')
+    const contextMenu = Menu.buildFromTemplate([
+      { label: 'Settings', click: toggleSettings },
+      { type: 'separator' },
+      { label: 'Quit', click: () => app.quit() }
+    ])
+    tray.on('double-click', toggleSettings)
+    tray.setContextMenu(contextMenu)
+  } else {
+    tray.on('click', toggleSettings)
+  }
 }
 
 // ── Global shortcuts ───────────────────────────────────────
@@ -273,11 +300,11 @@ app.whenReady().then(async () => {
     // Set dock icon
     const dockIcon = nativeImage.createFromPath(path.join(__dirname, 'icon.png'))
     app.dock.setIcon(dockIcon)
-  }
-  if (process.platform === 'darwin') {
+    // Request mic permission on macOS
     const status = systemPreferences.getMediaAccessStatus('microphone')
     if (status !== 'granted') await systemPreferences.askForMediaAccess('microphone')
   }
+  // On Windows, mic permission is handled by the browser/Electron media API automatically
   createTray()
   createPrompterWindow()
   registerShortcuts()
