@@ -160,6 +160,22 @@
 
       <div class="divider"></div>
 
+      <!-- Microphone selector -->
+      <div class="row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+        <span class="row-label">Microphone</span>
+        <select id="mic-select" style="
+          width:100%; background:rgba(255,255,255,0.06);
+          border:1px solid rgba(255,255,255,0.1); border-radius:8px;
+          color:rgba(255,255,255,0.8); font-family:'DM Mono',monospace;
+          font-size:11px; padding:7px 10px; outline:none; cursor:pointer;
+          -webkit-appearance:none; appearance:none;
+        ">
+          <option value="default">Default microphone</option>
+        </select>
+      </div>
+
+      <div class="divider"></div>
+
       <!-- Speed -->
       <div class="row">
         <span class="row-label">Scroll Speed</span>
@@ -203,9 +219,35 @@
   const thresholdToSlider = t => Math.round(Math.log(t / MIN_T) / Math.log(MAX_T / MIN_T) * 100)
   const thresholdToDb = t => (20 * Math.log10(Math.max(t, 0.0001))).toFixed(0)
 
+  async function populateMics() {
+    try {
+      // Need permission first
+      const tmp = await navigator.mediaDevices.getUserMedia({ audio: true })
+      tmp.getTracks().forEach(t => t.stop())
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const mics = devices.filter(d => d.kind === 'audioinput')
+      const sel = document.getElementById('mic-select')
+      sel.innerHTML = ''
+      mics.forEach(d => {
+        const opt = document.createElement('option')
+        opt.value = d.deviceId
+        opt.textContent = d.label || `Microphone (${d.deviceId.slice(0,8)})`
+        sel.appendChild(opt)
+      })
+      // Set current
+      const cfg = await window.electronAPI.getConfig()
+      if (cfg.micDeviceId) sel.value = cfg.micDeviceId
+    } catch(e) {}
+  }
+
+  document.getElementById('mic-select').addEventListener('change', e => {
+    window.electronAPI.setConfig({ micDeviceId: e.target.value })
+  })
+
   async function init() {
     const cfg = await window.electronAPI.getConfig()
     applyConfig(cfg)
+    await populateMics()
     startMeter()
   }
 
@@ -286,7 +328,14 @@
   async function startMeter() {
     if (meterStream) return
     try {
-      meterStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      meterStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          suppressLocalAudioPlayback: true,
+        }
+      })
       const ctx = new AudioContext()
       const analyser = ctx.createAnalyser()
       analyser.fftSize = 1024

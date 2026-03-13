@@ -171,24 +171,73 @@ async function startMic() {
   }
 
   try {
-    state.micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const cfg = await window.electronAPI.getConfig()
+    const deviceId = cfg.micDeviceId && cfg.micDeviceId !== 'default' ? cfg.micDeviceId : undefined
+
+    state.micStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        deviceId: deviceId ? { exact: deviceId } : undefined,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        suppressLocalAudioPlayback: true,
+      }
+    })
   } catch(e) { setMicState('error', 'Mic blocked'); return }
 
   state.audioCtx = new AudioContext()
   const source = state.audioCtx.createMediaStreamSource(state.micStream)
   const analyser = state.audioCtx.createAnalyser()
-  analyser.fftSize = 1024
+  analyser.fftSize = 2048
+  analyser.smoothingTimeConstant = 0.3
   source.connect(analyser)
-  const data = new Float32Array(analyser.fftSize)
+
+  const freqData = new Float32Array(analyser.frequencyBinCount)
+  const timeData = new Float32Array(analyser.fftSize)
+  const sampleRate = state.audioCtx.sampleRate
+  const binHz = sampleRate / analyser.fftSize
+
+  // Sustained voice detection — requires N consecutive frames of voice activity
+  // This prevents bursts of music/audio from triggering scroll
+  let voiceFrameCount = 0
+  const VOICE_FRAMES_REQUIRED = 8  // ~130ms of sustained voice before scrolling
+
+  function isVoiceFrequency() {
+    analyser.getFloatFrequencyData(freqData)
+    const voiceLow = Math.floor(85 / binHz)
+    const voiceHigh = Math.ceil(3400 / binHz)
+    const highStart = Math.ceil(4000 / binHz)
+    const highEnd = Math.ceil(8000 / binHz)
+
+    let voiceEnergy = 0, highEnergy = 0
+    for (let i = voiceLow; i < voiceHigh && i < freqData.length; i++)
+      voiceEnergy += Math.pow(10, freqData[i] / 20)
+    for (let i = highStart; i < highEnd && i < freqData.length; i++)
+      highEnergy += Math.pow(10, freqData[i] / 20)
+
+    const voiceAvg = voiceEnergy / (voiceHigh - voiceLow)
+    const highAvg = highEnergy / (highEnd - highStart)
+    const passesFreq = highAvg > 0 ? (voiceAvg / highAvg) > 2.5 : false
+
+    if (passesFreq) {
+      voiceFrameCount = Math.min(voiceFrameCount + 1, VOICE_FRAMES_REQUIRED)
+    } else {
+      voiceFrameCount = Math.max(voiceFrameCount - 2, 0)
+    }
+
+    return voiceFrameCount >= VOICE_FRAMES_REQUIRED
+  }
 
   state.analyserInterval = setInterval(() => {
-    analyser.getFloatTimeDomainData(data)
+    analyser.getFloatTimeDomainData(timeData)
     let sum = 0
-    for (let i = 0; i < data.length; i++) sum += data[i] * data[i]
-    const rms = Math.sqrt(sum / data.length)
+    for (let i = 0; i < timeData.length; i++) sum += timeData[i] * timeData[i]
+    const rms = Math.sqrt(sum / timeData.length)
     const db = rms > 0 ? 20 * Math.log10(rms) : -100
     const pct = Math.max(0, Math.min(100, (db + 60) / 60 * 100))
-    const isSpeech = rms > VOLUME_THRESHOLD
+
+    // Dual check: volume threshold AND voice frequency profile
+    const isSpeech = rms > VOLUME_THRESHOLD && isVoiceFrequency()
 
     volBar.style.setProperty('--vol', pct.toFixed(1) + '%')
     volBar.style.setProperty('--vol-color', isSpeech ? '#22c55e' : 'rgba(255,255,255,0.25)')
@@ -318,6 +367,11 @@ window.electronAPI.onConfigUpdate((cfg) => {
   if (cfg.threshold !== undefined) VOLUME_THRESHOLD = cfg.threshold
   if (cfg.mode !== undefined) setupMouseBehavior(cfg.mode)
   if (cfg.autoScroll !== undefined) autoScroll = cfg.autoScroll
+  if (cfg.micDeviceId !== undefined && state.isRunning) {
+    // Restart mic with new device
+    stopMic()
+    setTimeout(() => startMic(), 200)
+  }
 })
 
 // ── Events ─────────────────────────────────────────────────

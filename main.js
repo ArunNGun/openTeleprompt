@@ -12,7 +12,7 @@ let isSettingsVisible = false
 const CONFIG_PATH = path.join(os.homedir(), '.teleprompter-config.json')
 function loadConfig() {
   try { return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) } catch(e) {}
-  return { scrollSpeed: 1, threshold: 0.018, screenshareHidden: true, mode: 'notch', opacity: 1, autoScroll: false }
+  return { scrollSpeed: 1, threshold: 0.018, screenshareHidden: true, mode: 'notch', opacity: 1, autoScroll: false, micDeviceId: 'default' }
   // screenshareHidden: true = hide on screen share ON by default
   // autoScroll: false = voice input ON by default
 }

@@ -1,6 +1,6 @@
 {
   "name": "open-teleprompter",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Voice-activated macOS teleprompter that lives in the notch",
   "main": "main.js",
   "private": true,
