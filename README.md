@@ -84,12 +84,19 @@ npm run build
 
 ## First launch (macOS)
 
-Right-click the app → Open → click Open in the security dialog.
+Right-click the app → Open → click **Open** in the security dialog.
 
-Or run:
+### ⚠️ "App is damaged" error?
+
+macOS tags apps downloaded from the internet with a "quarantine" flag. Since OpenTeleprompter isn't signed with an Apple Developer certificate, Gatekeeper blocks it with a misleading "damaged" warning — **the app is fine**.
+
+Fix it by running this in Terminal:
+
 ```bash
 xattr -cr /Applications/OpenTeleprompter.app
 ```
+
+**What this does:** `xattr` manages extended file attributes on macOS. The `-c` flag clears all attributes, and `-r` applies recursively to the entire `.app` bundle. This removes the quarantine flag that macOS attached when you downloaded the file. After running it once, the app opens normally forever — macOS stops asking.
 
 ---
 

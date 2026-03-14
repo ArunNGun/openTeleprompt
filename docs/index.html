@@ -717,7 +717,7 @@
 
   <div class="hero-badge">
     <div class="badge-dot"></div>
-    Free & Open Source · macOS · Windows Beta
+    v2.0 — Now built with Rust · Free & Open Source
   </div>
 
   <h1>Speak naturally.<br><em>Present confidently.</em></h1>
@@ -960,6 +960,17 @@
         <div class="faq-a"><div class="faq-inner"><p>Adjust the Voice Sensitivity slider in settings. Move it right to require louder speech before scrolling triggers. Using headphones with a mic also helps significantly.</p></div></div>
       </div>
       <div class="faq-item reveal" style="transition-delay:0.25s">
+        <button class="faq-q">macOS says the app is "damaged" and won't open — what do I do?<span class="faq-arrow">↓</span></button>
+        <div class="faq-a"><div class="faq-inner"><p>The app is not actually damaged. macOS tags apps downloaded from the internet with a "quarantine" flag. Since OpenTeleprompter isn't code-signed with an Apple Developer certificate ($99/yr), Gatekeeper blocks it with a misleading warning.<br><br>
+        Fix: open <strong>Terminal</strong> and run:<br><br>
+        <code style="background:#0d0d14;border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:6px 12px;font-family:monospace;font-size:13px;display:block;margin:8px 0;color:#818cf8">xattr -cr /Applications/OpenTeleprompter.app</code><br>
+        This strips the quarantine attribute from the app bundle. <code style="font-family:monospace">xattr</code> manages extended file attributes on macOS, <code style="font-family:monospace">-c</code> clears them, and <code style="font-family:monospace">-r</code> applies recursively to the whole bundle. One-time fix — you won't need to do it again.</p></div></div>
+      </div>
+      <div class="faq-item reveal" style="transition-delay:0.3s">
+        <button class="faq-q">What changed in v2.0?<span class="faq-arrow">↓</span></button>
+        <div class="faq-a"><div class="faq-inner"><p>v2.0 is a complete rewrite of the native backend in Rust using Tauri v2, replacing the old Electron runtime. The result: a 4.6MB binary (down from ~150MB), ~40MB RAM usage (down from ~200MB), and a 2.6MB DMG installer (down from ~80MB). The frontend (UI, features, shortcuts) is unchanged — it's the same experience, just dramatically lighter and faster to launch.</p></div></div>
+      </div>
+      <div class="faq-item reveal" style="transition-delay:0.35s">
         <button class="faq-q">Is it really free?<span class="faq-arrow">↓</span></button>
         <div class="faq-a"><div class="faq-inner"><p>Yes. OpenTeleprompter is completely free and open source under the MIT license. Download it, use it, fork it — no strings attached, ever.</p></div></div>
       </div>
@@ -974,15 +985,16 @@
   <h2 class="reveal" style="transition-delay:0.1s">Start presenting<br>with confidence.</h2>
   <p class="reveal" style="transition-delay:0.2s">Free. Open source. No account needed.</p>
   <div class="download-row reveal" style="transition-delay:0.3s">
-    <a href="https://github.com/ArunNGun/openTeleprompt/releases/latest" class="dl-btn">
+    <a href="https://github.com/ArunNGun/openTeleprompt/releases/latest" class="dl-btn" style="position:relative">
+      <span style="position:absolute;top:10px;right:12px;font-size:9px;font-family:'DM Mono',monospace;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--green);padding:2px 7px;border-radius:100px;letter-spacing:0.06em">v2.0 NEW</span>
       <span class="dl-tag">🍎 Apple Silicon</span>
       <span class="dl-title">↓ Download for M1–M4</span>
-      <span class="dl-sub">arm64 · macOS 13+</span>
+      <span class="dl-sub">arm64 · macOS 13+ · 2.6MB</span>
     </a>
     <a href="https://github.com/ArunNGun/openTeleprompt/releases/latest" class="dl-btn">
       <span class="dl-tag">🍎 Intel Mac</span>
       <span class="dl-title">↓ Download for Intel</span>
-      <span class="dl-sub">x64 · macOS 13+</span>
+      <span class="dl-sub">x64 · macOS 13+ · coming soon</span>
     </a>
     <a href="https://github.com/ArunNGun/openTeleprompt/releases/tag/v1.1.0-beta-win" class="dl-btn" style="border-color:rgba(129,140,248,0.3);position:relative">
       <span style="position:absolute;top:10px;right:12px;font-size:9px;font-family:'DM Mono',monospace;background:rgba(129,140,248,0.15);border:1px solid rgba(129,140,248,0.3);color:var(--accent);padding:2px 7px;border-radius:100px;letter-spacing:0.06em">BETA</span>
@@ -991,6 +1003,27 @@
       <span class="dl-sub">x64 · Windows 10+</span>
     </a>
   </div>
+
+  <!-- v2.0 callout -->
+  <div class="reveal" style="transition-delay:0.35s;max-width:520px;margin:0 auto 32px;background:var(--accent-dim);border:1px solid rgba(129,140,248,0.25);border-radius:14px;padding:20px 24px;text-align:left">
+    <p style="font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px">🦀 v2.0 — Rewritten in Rust</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <p style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--text)">4.6 MB</p>
+        <p style="font-size:11px;color:var(--muted)">binary (was 150MB)</p>
+      </div>
+      <div>
+        <p style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--text)">~40 MB</p>
+        <p style="font-size:11px;color:var(--muted)">RAM (was 200MB)</p>
+      </div>
+      <div>
+        <p style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--text)">2.6 MB</p>
+        <p style="font-size:11px;color:var(--muted)">DMG (was 80MB)</p>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);line-height:1.7">Same features, same UI — just a Rust/Tauri v2 backend replacing Electron. Faster launch, fraction of the memory, tiny installer.</p>
+  </div>
+
   <div class="reveal install-steps" style="transition-delay:0.4s">
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;font-weight:600">First launch instructions</p>
     <div class="install-grid">
@@ -1007,9 +1040,15 @@
         <span class="install-text">Click <strong>Open</strong> in the security dialog — done, it opens normally from now on</span>
       </div>
     </div>
-    <p style="font-size:12px;color:var(--dim);margin-top:16px">
-      Or run <code style="background:var(--surface);padding:2px 8px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px">xattr -cr /Applications/OpenTeleprompter.app</code> in Terminal to clear the quarantine flag instantly.
-    </p>
+    <div style="margin-top:20px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:16px">
+      <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">⚠️ Seeing "App is damaged"?</p>
+      <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px">
+        macOS tags apps downloaded from the internet with a "quarantine" flag. Since OpenTeleprompter isn't signed with an Apple Developer certificate, Gatekeeper blocks it with a false "damaged" warning. The app is fine — just remove the flag.
+      </p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Open <strong style="color:var(--text)">Terminal</strong> and run:</p>
+      <code style="display:block;background:#0a0a0e;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--accent)">xattr -cr /Applications/OpenTeleprompter.app</code>
+      <p style="font-size:11px;color:var(--dim);margin-top:10px">This strips the quarantine attribute recursively from the app bundle. macOS stops blocking it and it opens normally. You only need to do this once.</p>
+    </div>
   </div>
 </section>
 
