@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Settings</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background: transparent; }
+    body { width: 280px; height: auto; background: transparent; font-family: 'Syne', sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
+
+    #panel {
+      isolation: isolate;
+      -webkit-mask-image: -webkit-radial-gradient(white, black); /* force GPU layer + clip corners */
+      width: 280px;
+      background: rgba(12,12,14,0.96);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header — fixed */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .title { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.85); letter-spacing: 0.02em; }
+    .quit-btn { background: none; border: none; color: rgba(255,255,255,0.2); cursor: pointer; font-size: 10px; font-family: 'Syne', sans-serif; transition: color 0.15s; }
+    .quit-btn:hover { color: #ef4444; }
+
+    /* Scrollable body */
+    .body {
+      overflow-y: auto;
+      flex: 1;
+      padding: 10px 0;
+    }
+    .body::-webkit-scrollbar { width: 3px; }
+    .body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    /* Row */
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      gap: 12px;
+    }
+    .row-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.45); letter-spacing: 0.04em; }
+    .row-val { font-family: 'DM Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.6); }
+
+    /* Slider row */
+    .slider-row { padding: 2px 14px 8px; }
+    input[type=range] {
+      -webkit-appearance: none; width: 100%; height: 3px;
+      border-radius: 2px; background: rgba(255,255,255,0.1); outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px;
+      border-radius: 50%; background: #818cf8; cursor: pointer;
+    }
+
+    /* Toggle switch */
+    .switch { position: relative; width: 32px; height: 18px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .sw {
+      position: absolute; inset: 0; background: rgba(255,255,255,0.1);
+      border-radius: 18px; cursor: pointer; transition: background 0.2s;
+    }
+    .sw::before {
+      content: ''; position: absolute; width: 12px; height: 12px;
+      left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s;
+    }
+    input:checked + .sw { background: #22c55e; }
+    input:checked + .sw::before { transform: translateX(14px); }
+
+    /* Mode toggle */
+    .mode-group { display: flex; background: rgba(255,255,255,0.05); border-radius: 7px; padding: 2px; gap: 2px; }
+    .mode-btn {
+      flex: 1; padding: 4px 6px; border: none; border-radius: 5px; cursor: pointer;
+      font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 600;
+      background: transparent; color: rgba(255,255,255,0.3); transition: all 0.15s; white-space: nowrap;
+    }
+    .mode-btn.active { background: #818cf8; color: #fff; }
+
+    /* Meter */
+    .meter { height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; position: relative; margin: 4px 14px 6px; }
+    .meter-fill { position: absolute; left: 0; top: 0; bottom: 0; background: #22c55e; border-radius: 2px; transition: width 0.06s; }
+    .meter-mark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #818cf8; border-radius: 1px; }
+
+    /* Shortcuts */
+    .shortcut { display: flex; justify-content: space-between; align-items: center; padding: 5px 14px; }
+    .sc-label { font-size: 10px; color: rgba(255,255,255,0.3); }
+    .sc-key { font-family: 'DM Mono', monospace; font-size: 10px; background: rgba(255,255,255,0.07); border-radius: 4px; padding: 1px 5px; color: rgba(255,255,255,0.4); }
+
+    .divider { height: 1px; background: rgba(255,255,255,0.05); margin: 4px 0; }
+
+    /* Hidden settings body */
+    #settings-body { transition: opacity 0.2s; }
+    #settings-body.hidden { opacity: 0; pointer-events: none; height: 0; overflow: hidden; }
+
+    .switch-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 14px; }
+  </style>
+</head>
+<body>
+<div id="panel">
+  <div class="header">
+    <span class="title">✦ Teleprompter</span>
+    <button class="quit-btn" id="btn-quit">Quit</button>
+  </div>
+
+  <div class="body">
+    <!-- Show Prompter -->
+    <div class="row">
+      <span class="row-label">Show Prompter</span>
+      <label class="switch"><input type="checkbox" id="prompter-toggle" checked><span class="sw"></span></label>
+    </div>
+
+    <div id="settings-body">
+      <div class="divider"></div>
+
+      <!-- Style -->
+      <div class="row">
+        <span class="row-label">Style</span>
+        <div class="mode-group">
+          <button class="mode-btn active" id="mode-notch" data-mode="notch">Notch</button>
+          <button class="mode-btn" id="mode-classic" data-mode="classic">Classic</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Opacity -->
+      <div class="row">
+        <span class="row-label">Opacity</span>
+        <span class="row-val" id="opacity-display">100%</span>
+      </div>
+      <div class="slider-row">
+        <input type="range" id="opacity-slider" min="20" max="100" step="5" value="100">
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Scroll mode -->
+      <div class="row">
+        <span class="row-label">Voice Input</span>
+        <label class="switch"><input type="checkbox" id="autoscroll-toggle" checked><span class="sw"></span></label>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Screen share -->
+      <div class="row">
+        <span class="row-label">Hide on screen share</span>
+        <label class="switch"><input type="checkbox" id="screenshare-toggle"><span class="sw"></span></label>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="divider"></div>
+
+      <!-- Microphone selector -->
+      <div class="row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+        <span class="row-label">Microphone</span>
+        <select id="mic-select" style="
+          width:100%; background:rgba(255,255,255,0.06);
+          border:1px solid rgba(255,255,255,0.1); border-radius:8px;
+          color:rgba(255,255,255,0.8); font-family:'DM Mono',monospace;
+          font-size:11px; padding:7px 10px; outline:none; cursor:pointer;
+          -webkit-appearance:none; appearance:none;
+        ">
+          <option value="default">Default microphone</option>
+        </select>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Speed -->
+      <div class="row">
+        <span class="row-label">Scroll Speed</span>
+        <span class="row-val" id="speed-display">1×</span>
+      </div>
+      <div class="slider-row">
+        <input type="range" id="speed-slider" min="0" max="7" step="1" value="3">
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Sensitivity -->
+      <div class="row">
+        <span class="row-label">Voice Sensitivity</span>
+        <span class="row-val" id="threshold-display">–35 dB</span>
+      </div>
+      <div class="meter">
+        <div class="meter-fill" id="meter-fill"></div>
+        <div class="meter-mark" id="threshold-mark" style="left:50%"></div>
+      </div>
+      <div class="slider-row">
+        <input type="range" id="threshold-slider" min="0" max="100" step="1" value="24">
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Shortcuts -->
+      <div class="shortcut"><span class="sc-label">Pause / Resume</span><span class="sc-key">⌘⇧Space</span></div>
+      <div class="shortcut"><span class="sc-label">Speed Up / Down</span><span class="sc-key">⌘⇧↑↓</span></div>
+      <div class="shortcut"><span class="sc-label">Reset to Top</span><span class="sc-key">⌘⇧R</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Tauri IPC bridge
+  const tauriInvoke = window.__TAURI__?.core?.invoke ?? (() => Promise.resolve(null))
+  const tauriListen = window.__TAURI__?.event?.listen ?? (() => Promise.resolve(() => {}))
+
+  const API = {
+    getConfig: () => tauriInvoke('get_config'),
+    setConfig: (patch) => tauriInvoke('set_config', { patch }),
+    onConfigUpdate: (cb) => { tauriListen('config-update', (e) => cb(e.payload)) },
+    togglePrompter: () => tauriInvoke('toggle_prompter'),
+    resizeSettings: (dims) => tauriInvoke('resize_settings', { dims }),
+    quit: () => tauriInvoke('quit_app'),
+    openDevTools: () => tauriInvoke('open_devtools'),
+    platform: navigator.userAgent.includes('Windows') ? 'win32' : 'darwin',
+  }
+
+  const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+  // Range: 0.003 (-50dB, whisper) → 0.562 (-5dB, near-clipping loud)
+  // Logarithmic — default 0.018 (-35dB) sits at slider ~24
+  const MIN_T = 0.003, MAX_T = 0.562
+  const sliderToThreshold = v => MIN_T * Math.pow(MAX_T / MIN_T, v / 100)
+  const thresholdToSlider = t => Math.round(Math.log(t / MIN_T) / Math.log(MAX_T / MIN_T) * 100)
+  const thresholdToDb = t => (20 * Math.log10(Math.max(t, 0.0001))).toFixed(0)
+
+  async function populateMics() {
+    try {
+      // Need permission first
+      const tmp = await navigator.mediaDevices.getUserMedia({ audio: true })
+      tmp.getTracks().forEach(t => t.stop())
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const mics = devices.filter(d => d.kind === 'audioinput')
+      const sel = document.getElementById('mic-select')
+      sel.innerHTML = ''
+      mics.forEach(d => {
+        const opt = document.createElement('option')
+        opt.value = d.deviceId
+        opt.textContent = d.label || `Microphone (${d.deviceId.slice(0,8)})`
+        sel.appendChild(opt)
+      })
+      // Set current
+      const cfg = await API.getConfig()
+      if (cfg && cfg.micDeviceId) sel.value = cfg.micDeviceId
+    } catch(e) {}
+  }
+
+  document.getElementById('mic-select').addEventListener('change', e => {
+    API.setConfig({ micDeviceId: e.target.value })
+  })
+
+  async function init() {
+    // Update mode label for Windows (no physical notch)
+    if (API.platform === 'win32') {
+      const notchBtn = document.getElementById('mode-notch')
+      if (notchBtn) notchBtn.textContent = 'Top Bar'
+    }
+    const cfg = await API.getConfig()
+    if (cfg) applyConfig(cfg)
+    await populateMics()
+    startMeter()
+  }
+
+  function applyConfig(c) {
+    const si = SPEEDS.indexOf(c.scrollSpeed) !== -1 ? SPEEDS.indexOf(c.scrollSpeed) : 3
+    document.getElementById('speed-slider').value = si
+    document.getElementById('speed-display').textContent = SPEEDS[si] + '×'
+
+    const tv = thresholdToSlider(c.threshold)
+    document.getElementById('threshold-slider').value = tv
+    document.getElementById('threshold-display').textContent = thresholdToDb(c.threshold) + ' dB'
+    document.getElementById('threshold-mark').style.left = tv + '%'
+
+    document.getElementById('screenshare-toggle').checked = !!c.screenshareHidden
+    document.getElementById('autoscroll-toggle').checked = !c.autoScroll
+
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === (c.mode || 'notch')))
+
+    const op = Math.round((c.opacity ?? 1) * 100)
+    document.getElementById('opacity-slider').value = op
+    document.getElementById('opacity-display').textContent = op + '%'
+
+
+  }
+
+  API.onConfigUpdate(applyConfig)
+
+  document.getElementById('speed-slider').addEventListener('input', e => {
+    const v = +e.target.value
+    document.getElementById('speed-display').textContent = SPEEDS[v] + '×'
+    API.setConfig({ scrollSpeed: SPEEDS[v] })
+  })
+
+  document.getElementById('threshold-slider').addEventListener('input', e => {
+    const v = +e.target.value
+    const t = sliderToThreshold(v)
+    document.getElementById('threshold-display').textContent = thresholdToDb(t) + ' dB'
+    document.getElementById('threshold-mark').style.left = v + '%'
+    API.setConfig({ threshold: t })
+  })
+
+  document.getElementById('opacity-slider').addEventListener('input', e => {
+    const v = +e.target.value
+    document.getElementById('opacity-display').textContent = v + '%'
+    API.setConfig({ opacity: v / 100 })
+  })
+
+  document.getElementById('autoscroll-toggle').addEventListener('change', e => {
+    API.setConfig({ autoScroll: !e.target.checked })
+  })
+
+  document.getElementById('screenshare-toggle').addEventListener('change', e => {
+    API.setConfig({ screenshareHidden: e.target.checked })
+  })
+
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      API.setConfig({ mode: btn.dataset.mode })
+    })
+  })
+
+  document.getElementById('btn-quit').addEventListener('click', () => API.quit())
+
+
+
+  // Auto-resize window to content height
+  function fitWindow() {
+    const h = document.getElementById('panel').getBoundingClientRect().height
+    API.resizeSettings({ height: Math.ceil(h) + 2 })
+  }
+  // Observe panel size changes
+  new ResizeObserver(fitWindow).observe(document.getElementById('panel'))
+
+  document.addEventListener('keydown', e => {
+    if (e.metaKey && e.altKey && e.code === 'KeyI') API.openDevTools()
+  })
+
+  let meterStream = null, meterInterval = null
+
+  async function startMeter() {
+    if (meterStream) return
+    try {
+      meterStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          suppressLocalAudioPlayback: true,
+        }
+      })
+      const ctx = new AudioContext()
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = 1024
+      ctx.createMediaStreamSource(meterStream).connect(analyser)
+      const data = new Float32Array(analyser.fftSize)
+      const fill = document.getElementById('meter-fill')
+      meterInterval = setInterval(() => {
+        analyser.getFloatTimeDomainData(data)
+        let sum = 0; for (let i = 0; i < data.length; i++) sum += data[i] * data[i]
+        const rms = Math.sqrt(sum / data.length)
+        const db = rms > 0 ? 20 * Math.log10(rms) : -100
+        const pct = Math.max(0, Math.min(100, (db + 60) / 60 * 100))
+        fill.style.width = pct.toFixed(1) + '%'
+        fill.style.background = rms > sliderToThreshold(+document.getElementById('threshold-slider').value) ? '#22c55e' : 'rgba(255,255,255,0.15)'
+      }, 32)
+    } catch(e) {}
+  }
+
+  function stopMeter() {
+    if (meterInterval) { clearInterval(meterInterval); meterInterval = null }
+    if (meterStream) { meterStream.getTracks().forEach(t => t.stop()); meterStream = null }
+    document.getElementById('meter-fill').style.width = '0%'
+  }
+
+  document.getElementById('prompter-toggle').addEventListener('change', async e => {
+    const isVisible = await API.togglePrompter()
+    e.target.checked = isVisible
+    document.getElementById('settings-body').classList.toggle('hidden', !isVisible)
+    if (isVisible) startMeter(); else stopMeter()
+  })
+
+  init()
+
+  // Close settings when window loses focus (click outside)
+  window.addEventListener('blur', () => {
+    // Small delay so internal interactions (dropdowns etc.) don't close it
+    setTimeout(() => {
+      if (!document.hasFocus()) {
+        tauriInvoke('hide_settings')
+      }
+    }, 150)
+  })
+</script>
+</body>
+</html>

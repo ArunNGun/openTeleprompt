@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Teleprompter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="island">
+
+    <!-- IDLE -->
+    <div id="view-idle" class="view active">
+      <div class="idle-inner">
+        <span class="idle-dot" id="idle-dot"></span>
+        <span class="idle-label">Teleprompter</span>
+        <button class="idle-btn" id="btn-open">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- EDIT -->
+    <div id="view-edit" class="view">
+      <div class="edit-header">
+        <button class="pill-btn ghost" id="btn-collapse">✕</button>
+        <span class="view-title">Script</span>
+        <button class="pill-btn ghost" id="btn-new-script">+ New</button>
+        <button class="pill-btn ghost" id="btn-save">Save</button>
+        <button class="pill-btn accent" id="btn-start">Go</button>
+      </div>
+      <!-- Saved scripts -->
+      <div id="script-list"></div>
+      <textarea id="script-input" placeholder="Paste your script here…" spellcheck="false"></textarea>
+      <div id="script-stats"></div>
+    </div>
+
+    <!-- READ -->
+    <div id="view-read" class="view">
+
+      <div id="scroll-viewport">
+        <div id="script-text"></div>
+      </div>
+
+      <!-- Volume meter -->
+      <div id="vol-meter-wrap">
+        <div id="vol-bar"></div>
+        <span id="vol-label">0 dB</span>
+      </div>
+
+      <div id="read-controls">
+        <div class="ctrl-left">
+          <span class="mic-ring" id="mic-ring"><span class="mic-core"></span></span>
+          <span id="status-text">Listening</span>
+        </div>
+        <div class="ctrl-right">
+          <button class="ctrl-btn" id="btn-font-down" title="Decrease font">A−</button>
+          <button class="ctrl-btn" id="btn-font-up" title="Increase font">A+</button>
+          <button class="ctrl-btn" id="btn-slower">−</button>
+          <span id="speed-val">1×</span>
+          <button class="ctrl-btn" id="btn-faster">+</button>
+          <button class="ctrl-btn" id="btn-pause" title="Space to pause">⏸</button>
+          <button class="ctrl-btn" id="btn-back">↺</button>
+          <button class="ctrl-btn" id="btn-done">✕</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+<script src="app.js"></script>
+</body>
+</html>

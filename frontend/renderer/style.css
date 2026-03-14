@@ -1,0 +1,425 @@
+/* ── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: 'Syne', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+
+
+/* ── Island shell ─────────────────────────────────────────── */
+#island {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+
+  /* Pill shape — starts narrow like the notch */
+  width: 200px;
+  height: 36px;
+  border-radius: 20px;
+
+  background: #0a0a0a;
+  border: none;
+  box-shadow: none;
+
+  overflow: hidden;
+  transition:
+    width 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
+    height 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-radius 0.45s cubic-bezier(0.34, 1.2, 0.64, 1);
+
+  /* Cursor drag for the idle state */
+  cursor: default;
+}
+
+/* Expanded for edit — fill full window exactly */
+#island.state-edit {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 16px;
+}
+
+/* Script list — single line, horizontal scroll */
+#script-list {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 0 12px 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+#script-list::-webkit-scrollbar { display: none; }
+.script-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.script-item:hover { background: rgba(255,255,255,0.1); }
+.script-item.active { background: rgba(129,140,248,0.2); }
+.script-name { font-size: 10px; color: rgba(255,255,255,0.6); font-family: 'DM Mono', monospace; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.script-del { background: none; border: none; color: rgba(255,255,255,0.2); cursor: pointer; font-size: 9px; padding: 0; line-height: 1; }
+.script-del:hover { color: #ef4444; }
+
+/* Expanded for reading — fill full window exactly */
+#island.state-read {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 16px;
+}
+
+/* ── Views ───────────────────────────────────────────────── */
+.view {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+.view.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── IDLE VIEW ───────────────────────────────────────────── */
+#view-idle {
+  justify-content: center;
+  align-items: center;
+}
+.idle-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+.idle-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #333;
+  flex-shrink: 0;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.idle-dot.listening {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e88;
+  animation: breathe 2s ease-in-out infinite;
+}
+.idle-dot.paused {
+  background: #f59e0b;
+}
+@keyframes breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+.idle-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex: 1;
+}
+.idle-btn {
+  background: rgba(255,255,255,0.08);
+  border: none;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.idle-btn:hover { background: rgba(255,255,255,0.16); color: #fff; }
+
+/* ── EDIT VIEW ───────────────────────────────────────────── */
+.edit-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px 6px;
+  gap: 6px;
+}
+
+/* ── Progress bar ────────────────────────────────────────── */
+#progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0%;
+  background: linear-gradient(to right, #818cf8, #22c55e);
+  border-radius: 0 2px 2px 0;
+  z-index: 10;
+  transition: width 0.1s linear;
+}
+
+/* ── Countdown overlay ───────────────────────────────────── */
+#countdown-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10,10,10,0.85);
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+#countdown-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+#countdown-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 56px;
+  font-weight: 800;
+  color: #fff;
+  animation: pop 0.9s ease-out;
+}
+@keyframes pop {
+  0%   { transform: scale(1.4); opacity: 0; }
+  20%  { transform: scale(1);   opacity: 1; }
+  80%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+
+#script-stats {
+  padding: 4px 16px 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.2);
+  display: flex;
+  gap: 10px;
+}
+.view-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+#script-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 4px 16px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.85);
+  caret-color: #818cf8;
+}
+#script-input::placeholder {
+  color: rgba(255,255,255,0.2);
+}
+
+/* ── READ VIEW ───────────────────────────────────────────── */
+#scroll-viewport {
+  flex: 1;
+  overflow-y: hidden;
+  position: relative;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 15%,
+    black 80%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 15%,
+    black 80%,
+    transparent 100%
+  );
+}
+
+/* Hide scrollbar visually but keep it functional */
+#scroll-viewport::-webkit-scrollbar { display: none; }
+
+#script-text {
+  padding: 16px 20px 60px;
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.92);
+  letter-spacing: 0em;
+  will-change: transform;
+}
+
+
+
+/* ── Volume meter (dev) ────────────────────────────────── */
+#vol-meter-wrap {
+  position: absolute;
+  bottom: 40px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#vol-bar {
+  flex: 1;
+  height: 2px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+#vol-bar::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: var(--vol, 0%);
+  background: var(--vol-color, rgba(255,255,255,0.25));
+  border-radius: 2px;
+  transition: width 0.08s ease, background 0.1s ease;
+}
+#vol-label {
+  font-size: 8px;
+  color: rgba(255,255,255,0.2);
+  min-width: 34px;
+  text-align: right;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── READ CONTROLS ─────────────────────────────────────── */
+#read-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  background: linear-gradient(to top, rgba(10,10,10,0.99) 70%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 4px;
+}
+.ctrl-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ctrl-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Mic ring animation */
+.mic-ring {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid #22c55e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ring-pulse 2s ease-in-out infinite;
+}
+.mic-ring.paused {
+  border-color: #f59e0b;
+  animation: none;
+}
+.mic-ring.error {
+  border-color: #ef4444;
+  animation: none;
+}
+@keyframes ring-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.7; }
+}
+.mic-core {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #22c55e;
+  transition: background 0.2s;
+}
+.mic-ring.paused .mic-core { background: #f59e0b; }
+.mic-ring.error .mic-core { background: #ef4444; }
+
+#status-text {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.04em;
+}
+
+.ctrl-btn {
+  background: rgba(255,255,255,0.06);
+  border: none;
+  color: rgba(255,255,255,0.45);
+  border-radius: 6px;
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.ctrl-btn:hover {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+}
+#speed-val {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.3);
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ── Generic pill buttons ─────────────────────────────── */
+.pill-btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: opacity 0.15s, background 0.15s;
+}
+.pill-btn.ghost {
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.4);
+}
+.pill-btn.ghost:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.pill-btn.accent {
+  background: #818cf8;
+  color: #fff;
+}
+.pill-btn.accent:hover { opacity: 0.85; }
+
+

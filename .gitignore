@@ -23,8 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Old Tauri/Vite files
-src-tauri/
+# Rust build artifacts
+src-tauri/target/
+
+# Old Vite files (not needed)
 src/
 public/
 vite.config.ts
