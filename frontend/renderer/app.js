@@ -21,6 +21,8 @@ const API = {
   moveWindow: (pos) => tauriInvoke('move_window', { pos }),
   getWindowPos: () => tauriInvoke('get_window_pos'),
   startDrag: () => tauriInvoke('start_drag'),
+  setHideFromCapture: (hide) => tauriInvoke('set_hide_from_capture', { hide }),
+  refreshOverlayBehavior: () => tauriInvoke('refresh_overlay_behavior'),
   onShortcut: (cb) => { tauriListen('shortcut', (e) => cb(e.payload)) },
 }
 
@@ -38,6 +40,7 @@ const state = {
   isRunning: false,
   scripts: [],
   currentScriptIndex: -1,
+  currentScriptImages: {},
 }
 
 let VOLUME_THRESHOLD = 0.018
@@ -58,10 +61,29 @@ const statusText = document.getElementById('status-text')
 const micRing = document.getElementById('mic-ring')
 const speedVal = document.getElementById('speed-val')
 const scriptInput = document.getElementById('script-input')
+const scriptImagePreview = document.getElementById('script-image-preview')
 const scriptStats = document.getElementById('script-stats')
+const hideCaptureBtn = document.getElementById('btn-hide-capture')
 const volBar = document.getElementById('vol-bar')
 const volLabel = document.getElementById('vol-label')
 const idleDot = document.getElementById('idle-dot')
+const HIDE_CAPTURE_KEY = 'teleprompter.hideFromCapture'
+let hideFromCapture = false
+
+function renderHideCaptureButton() {
+  if (!hideCaptureBtn) return
+  hideCaptureBtn.textContent = hideFromCapture ? 'No Capture: On' : 'No Capture: Off'
+  hideCaptureBtn.classList.toggle('active', hideFromCapture)
+}
+
+async function applyHideFromCapture(enabled) {
+  hideFromCapture = !!enabled
+  localStorage.setItem(HIDE_CAPTURE_KEY, hideFromCapture ? '1' : '0')
+  renderHideCaptureButton()
+  try {
+    await API.setHideFromCapture(hideFromCapture)
+  } catch (_) {}
+}
 
 // ── View switching ─────────────────────────────────────────
 function showView(name) {
@@ -110,10 +132,11 @@ function saveCurrentScript() {
   const text = scriptInput.value.trim()
   if (!text) return
   const name = text.split('\n')[0].substring(0, 40) || 'Untitled'
+  const storedText = serializeScriptText(scriptInput.value, state.currentScriptImages)
   if (state.currentScriptIndex >= 0) {
-    state.scripts[state.currentScriptIndex] = { name, text }
+    state.scripts[state.currentScriptIndex] = { name, text: storedText }
   } else {
-    state.scripts.unshift({ name, text })
+    state.scripts.unshift({ name, text: storedText })
     state.currentScriptIndex = 0
   }
   saveScripts()
@@ -122,8 +145,11 @@ function saveCurrentScript() {
 
 function loadScript(i) {
   state.currentScriptIndex = i
-  scriptInput.value = state.scripts[i].text
-  updateStats(state.scripts[i].text)
+  const parsed = parseStoredScript(state.scripts[i].text || '')
+  scriptInput.value = parsed.text
+  state.currentScriptImages = parsed.images
+  updateStats(parsed.text)
+  renderScriptImagePreview()
   renderScriptList()
 }
 
@@ -147,9 +173,149 @@ function updateStats(text) {
     : ''
 }
 
+function parseStoredScript(storedText) {
+  const marker = '\n[[__images__:'
+  const markerIndex = storedText.lastIndexOf(marker)
+  if (markerIndex === -1 || !storedText.endsWith(']]')) {
+    return { text: storedText, images: {} }
+  }
+  const encoded = storedText.slice(markerIndex + marker.length, -2)
+  const text = storedText.slice(0, markerIndex)
+  try {
+    const images = JSON.parse(atob(encoded))
+    if (images && typeof images === 'object') return { text, images }
+  } catch (_) {}
+  return { text: storedText, images: {} }
+}
+
+function serializeScriptText(text, images) {
+  if (!images || !Object.keys(images).length) return text
+  return `${text}\n[[__images__:${btoa(JSON.stringify(images))}]]`
+}
+
+function getImageRefsFromScript(text) {
+  const refs = []
+  const rx = /\[\[image:([^\]]+)\]\]/g
+  let match
+  while ((match = rx.exec(text)) !== null) {
+    refs.push(match[1])
+  }
+  return refs
+}
+
+function renderScriptImagePreview() {
+  if (!scriptImagePreview) return
+  const refs = getImageRefsFromScript(scriptInput.value)
+  const uniqueRefs = Array.from(new Set(refs))
+  if (!uniqueRefs.length) {
+    scriptImagePreview.innerHTML = ''
+    scriptImagePreview.style.display = 'none'
+    return
+  }
+  scriptImagePreview.style.display = 'flex'
+  scriptImagePreview.innerHTML = ''
+  uniqueRefs.forEach((ref) => {
+    const src = state.currentScriptImages[ref] || (ref.startsWith('data:image/') ? ref : null)
+    if (!src) return
+    const item = document.createElement('div')
+    item.className = 'script-image-item'
+    const img = document.createElement('img')
+    img.src = src
+    img.alt = 'Script image preview'
+    img.className = 'script-image-thumb'
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'script-image-remove'
+    btn.textContent = '✕'
+    btn.addEventListener('click', () => removeImageToken(ref))
+    item.appendChild(img)
+    item.appendChild(btn)
+    scriptImagePreview.appendChild(item)
+  })
+}
+
+function removeImageToken(ref) {
+  const escaped = ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const linePattern = new RegExp(`(^|\\n)\\[\\[image:${escaped}\\]\\](?=\\n|$)`, 'g')
+  scriptInput.value = scriptInput.value.replace(linePattern, '')
+  const inlinePattern = new RegExp(`\\[\\[image:${escaped}\\]\\]\\n?`, 'g')
+  scriptInput.value = scriptInput.value.replace(inlinePattern, '')
+  scriptInput.value = scriptInput.value.replace(/\n{3,}/g, '\n\n').replace(/^\n+/, '')
+  delete state.currentScriptImages[ref]
+  updateStats(scriptInput.value)
+  renderScriptImagePreview()
+}
+
 // ── Build script ───────────────────────────────────────────
 function buildScript(text) {
-  scriptText.textContent = text
+  scriptText.innerHTML = ''
+  scriptText.classList.remove('has-images', 'image-only')
+  const topImages = []
+  const textLines = []
+  const lines = text.split('\n')
+  for (const line of lines) {
+    const imageMatch = line.trim().match(/^\[\[image:(.+)\]\]$/)
+    if (imageMatch) {
+      const imageRef = imageMatch[1]
+      const src = state.currentScriptImages[imageRef] || imageRef
+      if (src) topImages.push(src)
+      continue
+    }
+    textLines.push(line)
+  }
+  topImages.forEach((src) => {
+    const img = document.createElement('img')
+    img.src = src
+    img.alt = 'Script image'
+    img.className = 'script-inline-image script-top-image'
+    scriptText.appendChild(img)
+  })
+  textLines.forEach((line) => {
+    const p = document.createElement('p')
+    p.textContent = line.length ? line : '\u00A0'
+    scriptText.appendChild(p)
+  })
+  if (!topImages.length && !textLines.length) {
+    const p = document.createElement('p')
+    p.textContent = '\u00A0'
+    scriptText.appendChild(p)
+  }
+  if (topImages.length) scriptText.classList.add('has-images')
+  if (topImages.length && !textLines.some((line) => line.trim().length)) scriptText.classList.add('image-only')
+}
+
+async function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+function insertAtCursor(el, value) {
+  const start = el.selectionStart ?? el.value.length
+  const end = el.selectionEnd ?? el.value.length
+  const before = el.value.slice(0, start)
+  const after = el.value.slice(end)
+  el.value = before + value + after
+  const caret = start + value.length
+  el.selectionStart = caret
+  el.selectionEnd = caret
+  updateStats(el.value)
+  renderScriptImagePreview()
+}
+
+async function insertImageFiles(files) {
+  const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'))
+  if (!imageFiles.length) return
+  for (const file of imageFiles) {
+    const dataUrl = await fileToDataUrl(file)
+    const imageId = `img_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    state.currentScriptImages[imageId] = dataUrl
+    const token = `${scriptInput.value.endsWith('\n') || !scriptInput.value ? '' : '\n'}[[image:${imageId}]]\n`
+    insertAtCursor(scriptInput, token)
+  }
 }
 
 // ── Speed ──────────────────────────────────────────────────
@@ -427,7 +593,7 @@ document.getElementById('btn-start').addEventListener('click', () => {
   const text = scriptInput.value.trim()
   if (!text) return
   saveCurrentScript()
-  buildScript(text)
+  buildScript(scriptInput.value)
   showView('read')
   scrollPos = 0
   scrollPos = 0; scriptText.style.transform = "translateY(0px)"
@@ -450,12 +616,36 @@ document.getElementById('btn-font-down').addEventListener('click', () => setFont
 
 document.getElementById('btn-new-script').addEventListener('click', () => {
   state.currentScriptIndex = -1
+  state.currentScriptImages = {}
   scriptInput.value = ''
   updateStats('')
+  renderScriptImagePreview()
   scriptInput.focus()
 })
 
-scriptInput.addEventListener('input', () => updateStats(scriptInput.value))
+hideCaptureBtn?.addEventListener('click', () => {
+  applyHideFromCapture(!hideFromCapture)
+})
+
+scriptInput.addEventListener('input', () => {
+  updateStats(scriptInput.value)
+  renderScriptImagePreview()
+})
+scriptInput.addEventListener('paste', async (e) => {
+  const files = Array.from(e.clipboardData?.items || [])
+    .map((item) => item.getAsFile())
+    .filter(Boolean)
+  if (!files.some((file) => file.type.startsWith('image/'))) return
+  e.preventDefault()
+  await insertImageFiles(files)
+})
+scriptInput.addEventListener('dragover', (e) => {
+  e.preventDefault()
+})
+scriptInput.addEventListener('drop', async (e) => {
+  e.preventDefault()
+  await insertImageFiles(Array.from(e.dataTransfer?.files || []))
+})
 
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && document.activeElement !== scriptInput) { e.preventDefault(); togglePause() }
@@ -468,6 +658,12 @@ document.addEventListener('keydown', (e) => {
 setSpeed(speedIndex)
 setFontSize(fontSize)
 loadScripts()
+renderScriptImagePreview()
+renderHideCaptureButton()
+
+const initialHideCapture = localStorage.getItem(HIDE_CAPTURE_KEY) === '1'
+applyHideFromCapture(initialHideCapture)
+API.refreshOverlayBehavior().catch(() => {})
 
 // Load config and init mouse behavior based on mode
 API.getConfig().then(cfg => {

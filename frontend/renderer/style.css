@@ -235,6 +235,49 @@ html, body {
   color: rgba(255,255,255,0.2);
 }
 
+#script-image-preview {
+  display: none;
+  gap: 8px;
+  padding: 0 16px 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#script-image-preview::-webkit-scrollbar { display: none; }
+
+.script-image-item {
+  position: relative;
+  flex: 0 0 auto;
+  width: 84px;
+  height: 58px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.04);
+}
+
+.script-image-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.script-image-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: rgba(0,0,0,0.58);
+  color: rgba(255,255,255,0.92);
+  font-size: 11px;
+  line-height: 1;
+}
+
 /* ── READ VIEW ───────────────────────────────────────────── */
 #scroll-viewport {
   flex: 1;
@@ -268,6 +311,46 @@ html, body {
   color: rgba(255,255,255,0.92);
   letter-spacing: 0em;
   will-change: transform;
+}
+
+#script-text p {
+  margin: 0 0 0.7em;
+}
+
+.script-inline-image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100vh - 52px);
+  object-fit: contain;
+  border-radius: 8px;
+  margin: 0 0 0.9em;
+}
+
+.script-top-image:first-child {
+  margin-top: 0.2em;
+}
+
+#script-text.has-images {
+  padding-top: 8px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+#script-text.image-only {
+  height: calc(100vh - 40px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+#script-text.image-only .script-inline-image {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  border-radius: 10px;
 }
 
 
@@ -416,6 +499,10 @@ html, body {
   color: rgba(255,255,255,0.4);
 }
 .pill-btn.ghost:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.pill-btn.ghost.active {
+  background: rgba(34,197,94,0.22);
+  color: #dcfce7;
+}
 .pill-btn.accent {
   background: #818cf8;
   color: #fff;
