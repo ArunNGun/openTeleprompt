@@ -33,3 +33,5 @@ vite.config.ts
 tsconfig.json
 tsconfig.node.json
 /index.html
+!src-tauri/src/
+!src-tauri/src/*.rs
