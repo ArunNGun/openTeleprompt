@@ -2,7 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-use std::sync::Mutex;
+use std::sync::{Mutex, atomic::{AtomicBool, Ordering}};
+
+// Set to true once the tray icon has been clicked — positioner needs this before TrayCenter works
+static TRAY_CLICKED: AtomicBool = AtomicBool::new(false);
 use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, PhysicalPosition, State, WebviewWindow,
@@ -266,8 +269,8 @@ fn resize_settings(app: AppHandle, dims: serde_json::Value) -> Result<(), String
     let capped_h = height.min(screen_h - 40.0);
 
     w.set_size(LogicalSize::new(panel_w, capped_h)).map_err(|e| e.to_string())?;
-    // Re-anchor after resize — use positioner if available, else keep current position
-    if w.move_window(Position::TrayCenter).is_err() {
+    // Re-anchor after resize — only use positioner after tray has been clicked
+    if !TRAY_CLICKED.load(Ordering::Relaxed) || w.move_window(Position::TrayCenter).is_err() {
         // Positioner not ready — fall back to bottom-right corner
         let monitor = w.current_monitor().ok().flatten();
         let scale = monitor.as_ref().map(|m| m.scale_factor()).unwrap_or(1.0);
@@ -406,12 +409,12 @@ fn position_settings_window(app: &AppHandle, w: &WebviewWindow) {
     #[cfg(not(target_os = "windows"))]
     let (panel_w, panel_h) = (280.0_f64, 380.0_f64);
 
-    // Try positioner (works after tray has been clicked at least once)
-    if w.move_window(Position::TrayCenter).is_ok() {
-        return;
+    // Only use positioner after tray has been clicked — calling it before panics
+    if TRAY_CLICKED.load(Ordering::Relaxed) {
+        if w.move_window(Position::TrayCenter).is_ok() { return; }
     }
 
-    // Fallback: bottom-right corner above taskbar (safe default for all platforms)
+    // Fallback: bottom-right corner above taskbar
     let x = screen_w - panel_w - 12.0;
     let y = screen_h - panel_h - 48.0;
     let _ = w.set_position(LogicalPosition::new(x, y));
@@ -599,6 +602,7 @@ pub fn run() {
             app_handle.on_tray_icon_event(move |tray, event| {
                 // Feed event to positioner so it knows tray position
                 tauri_plugin_positioner::on_tray_event(tray, &event);
+                TRAY_CLICKED.store(true, Ordering::Relaxed);
                 if let TrayIconEvent::Click {
                     button: MouseButton::Left,
                     button_state: MouseButtonState::Up, ..
