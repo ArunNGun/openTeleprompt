@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome to OpenTeleprompter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: transparent;
+      font-family: 'Syne', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
+
+    #panel {
+      width: 100%; height: 100%;
+      background: #0a0a0a;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      max-height: 100vh;
+    }
+
+    /* Subtle gradient glow top */
+    #panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 300px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(129,140,248,0.6), transparent);
+    }
+
+    /* Header */
+    .header {
+      padding: 24px 32px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #818cf8;
+      box-shadow: 0 0 10px #818cf866;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.6; transform: scale(0.8); }
+    }
+
+    .app-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 0.04em;
+    }
+
+    .version-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.05);
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-left: auto;
+    }
+
+    .tagline {
+      font-size: 12px;
+      color: rgba(255,255,255,0.3);
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      padding-left: 18px;
+    }
+
+    .divider { height: 1px; background: rgba(255,255,255,0.05); margin: 12px 0 0; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      padding: 10px 28px 0;
+      flex-shrink: 0;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 7px 4px;
+      background: transparent;
+      border: none;
+      border-radius: 7px;
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.25);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: all 0.15s;
+    }
+
+    .tab.active {
+      background: rgba(129,140,248,0.12);
+      color: #818cf8;
+    }
+
+    .tab:hover:not(.active) { color: rgba(255,255,255,0.5); }
+
+    /* Tab content */
+    .tab-content { display: none; flex: 1; overflow: hidden; min-height: 0; }
+    .tab-content.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+
+    /* Steps */
+    .steps {
+      padding: 16px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .steps::-webkit-scrollbar { display: none; }
+
+    .step {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      color: #818cf8;
+      background: rgba(129,140,248,0.1);
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .step-icon {
+      width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      opacity: 0.7;
+    }
+
+    .step-body { display: flex; flex-direction: column; gap: 3px; }
+
+    .step-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 0.01em;
+    }
+
+    .step-desc {
+      font-size: 12px;
+      color: rgba(255,255,255,0.38);
+      line-height: 1.6;
+      font-weight: 400;
+    }
+
+    .key {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 3px;
+      padding: 1px 6px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    /* Shortcuts list */
+    .shortcut-list {
+      padding: 0 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .shortcut-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .sc-body { display: flex; flex-direction: column; gap: 1px; }
+
+    .sc-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.65);
+    }
+
+    .sc-desc {
+      font-size: 11px;
+      color: rgba(255,255,255,0.28);
+    }
+
+    .sc-key {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 5px;
+      padding: 3px 8px;
+      color: rgba(255,255,255,0.4);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .divider-sm { height: 1px; background: rgba(255,255,255,0.05); margin: 4px 0 12px; }
+
+    .shortcuts-scroll {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    .shortcuts-scroll::-webkit-scrollbar { display: none; }
+
+    /* Footer */
+    .footer {
+      padding: 10px 32px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .author {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .author-label {
+      font-size: 9px;
+      color: rgba(255,255,255,0.2);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .author-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .github-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 6px 12px;
+      color: rgba(255,255,255,0.5);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .github-btn:hover {
+      background: rgba(255,255,255,0.09);
+      color: rgba(255,255,255,0.85);
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    .github-btn svg { opacity: 0.5; transition: opacity 0.15s; }
+    .github-btn:hover svg { opacity: 1; }
+
+    /* Get started button */
+    .cta-wrap {
+      padding: 0 32px 20px;
+      flex-shrink: 0;
+    }
+
+    .cta-btn {
+      width: 100%;
+      padding: 11px;
+      background: #818cf8;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .cta-btn:hover  { opacity: 0.9; }
+    .cta-btn:active { transform: scale(0.98); }
+  </style>
+</head>
+<body>
+<div id="panel">
+
+  <div class="header">
+    <div class="logo-row">
+      <span class="logo-dot"></span>
+      <span class="app-name">OpenTeleprompter</span>
+      <span class="version-badge">v2.0</span>
+    </div>
+    <div class="tagline">Voice-activated. Lives in your notch.</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Tab bar -->
+  <div class="tabs">
+    <button class="tab active" data-tab="guide">Quick Guide</button>
+    <button class="tab" data-tab="settings">Settings</button>
+    <button class="tab" data-tab="shortcuts">Shortcuts</button>
+  </div>
+
+  <!-- Guide tab -->
+  <div class="tab-content active" id="tab-guide">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Click the pill to open</div>
+          <div class="step-desc">The black pill sits in your menu bar. Click the <span class="key">›</span> chevron to expand and paste your script.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Paste your script & hit Go</div>
+          <div class="step-desc">Type or paste anything. Hit <span class="key">Save</span> to store it. Your scripts persist between sessions.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Start speaking — it scrolls</div>
+          <div class="step-desc">Voice detection scrolls while you talk, pauses when you stop. Hover over the pill to pause manually.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Tweak from the tray icon</div>
+          <div class="step-desc">Click the menu bar tray icon to open settings — speed, sensitivity, mic, opacity and more.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings tab -->
+  <div class="tab-content" id="tab-settings">
+    <div class="steps">
+      <div class="step">
+        <div class="step-icon">👁</div>
+        <div class="step-body">
+          <div class="step-title">Show Prompter</div>
+          <div class="step-desc">Toggle to show or hide the teleprompter pill. Useful when you need to step away without quitting.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">◐</div>
+        <div class="step-body">
+          <div class="step-title">Style — Notch / Classic</div>
+          <div class="step-desc"><span class="key">Notch</span> pins the pill to your MacBook's notch area at the top. <span class="key">Classic</span> makes it a floating draggable window you can place anywhere on screen.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">◑</div>
+        <div class="step-body">
+          <div class="step-title">Opacity</div>
+          <div class="step-desc">Controls how transparent the teleprompter is. Lower it so you can see your subject through the overlay during video calls.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">🎤</div>
+        <div class="step-body">
+          <div class="step-title">Voice Input</div>
+          <div class="step-desc">When ON, scrolling is driven by your voice — it scrolls while you speak and pauses when you stop. Turn OFF to switch to manual auto-scroll at a fixed pace.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">🖥</div>
+        <div class="step-body">
+          <div class="step-title">Hide on Screen Share</div>
+          <div class="step-desc">When ON, the teleprompter is invisible to screen recording and screen share tools like Zoom, Meet and Loom. Only you can see it.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">⦿</div>
+        <div class="step-body">
+          <div class="step-title">Microphone</div>
+          <div class="step-desc">Select which mic to use for voice detection. Switch between your built-in mic, AirPods, external USB mics or any other input device.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">⏩</div>
+        <div class="step-body">
+          <div class="step-title">Scroll Speed</div>
+          <div class="step-desc">Sets how fast the script scrolls when voice is detected. Slide left for slower, right for faster. 1× is the default natural pace.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">📶</div>
+        <div class="step-body">
+          <div class="step-title">Voice Sensitivity</div>
+          <div class="step-desc">Sets how loud you need to be before scrolling triggers. Slide right if it's not picking up your voice; slide left if background noise causes false triggers. The bar shows your live mic level.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shortcuts tab -->
+  <div class="tab-content" id="tab-shortcuts">
+    <div class="shortcuts-scroll">
+    <div class="steps" style="flex:0;padding-bottom:0;">
+      <div class="step">
+        <div class="step-icon">⌨</div>
+        <div class="step-body">
+          <div class="step-title">Global shortcuts</div>
+          <div class="step-desc">These work from anywhere — even when OpenTeleprompter is not in focus.</div>
+        </div>
+      </div>
+    </div>
+    <div class="shortcut-list">
+      <div class="shortcut-row">
+        <div class="sc-body">
+          <span class="sc-label">Pause / Resume</span>
+          <span class="sc-desc">Start or stop scrolling instantly mid-speech.</span>
+        </div>
+        <span class="sc-key">⌘⇧Space</span>
+      </div>
+      <div class="shortcut-row">
+        <div class="sc-body">
+          <span class="sc-label">Speed Up</span>
+          <span class="sc-desc">Increase scroll speed one step.</span>
+        </div>
+        <span class="sc-key">⌘⇧↑</span>
+      </div>
+      <div class="shortcut-row">
+        <div class="sc-body">
+          <span class="sc-label">Slow Down</span>
+          <span class="sc-desc">Decrease scroll speed one step.</span>
+        </div>
+        <span class="sc-key">⌘⇧↓</span>
+      </div>
+      <div class="shortcut-row">
+        <div class="sc-body">
+          <span class="sc-label">Reset to Top</span>
+          <span class="sc-desc">Jump back to the beginning of the script.</span>
+        </div>
+        <span class="sc-key">⌘⇧R</span>
+      </div>
+    </div>
+    <div class="steps" style="flex:0;padding-top:8px;">
+      <div class="step">
+        <div class="step-icon">🖱</div>
+        <div class="step-body">
+          <div class="step-title">In-app controls</div>
+          <div class="step-desc"><span class="key">Hover</span> over the pill to pause. <span class="key">Scroll wheel</span> to manually move through the script. <span class="key">A+ / A−</span> buttons adjust font size. <span class="key">↺</span> resets to the top.</div>
+        </div>
+      </div>
+    </div>
+    </div><!-- end shortcuts-scroll -->
+  </div>
+
+  <div class="footer">
+    <div class="author">
+      <span class="author-label">Built by</span>
+      <span class="author-name">Arun Kumar</span>
+    </div>
+    <a class="github-btn" id="github-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+      </svg>
+      ArunNGun
+    </a>
+  </div>
+
+  <div class="cta-wrap">
+    <button class="cta-btn" id="btn-start">Get Started →</button>
+  </div>
+
+</div>
+
+<script>
+  const tauriInvoke = window.__TAURI__?.core?.invoke ?? (() => Promise.resolve(null))
+
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'))
+      tab.classList.add('active')
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active')
+    })
+  })
+
+  document.getElementById('btn-start').addEventListener('click', () => {
+    tauriInvoke('close_welcome')
+  })
+
+  document.getElementById('github-link').addEventListener('click', () => {
+    tauriInvoke('open_url', { url: 'https://github.com/ArunNGun' })
+  })
+</script>
+</body>
+</html>
