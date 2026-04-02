@@ -1,20 +1,18 @@
 # OpenTeleprompter
 
-A free, open source voice-activated teleprompter that lives in your Mac's notch.
+A free, open source voice-activated teleprompter for **macOS and Windows**.
 
 **Speak → it scrolls. Stop → it pauses. No subscriptions. No cloud. No accounts.**
 
-![OpenTeleprompter Demo](docs/assets/demo.gif)
-
 ---
 
-## Download
+## Download — v2.2.1
 
-| Platform | Version | Link |
-|---|---|---|
-| 🍎 Apple Silicon (M1–M4) | v2.0.0 | [Download .dmg](https://github.com/ArunNGun/openTeleprompt/releases/latest) |
-| 🍎 Intel Mac | v2.0.0 | [Download .dmg](https://github.com/ArunNGun/openTeleprompt/releases/latest) |
-| 🪟 Windows | v1.1.0-beta | [Download .exe](https://github.com/ArunNGun/openTeleprompt/releases/tag/v1.1.0-beta-win) |
+| Platform | Link |
+|---|---|
+| 🍎 Apple Silicon (M1–M4) | [Download .dmg](https://github.com/ArunNGun/openTeleprompt/releases/latest) |
+| 🍎 Intel Mac | [Download .dmg](https://github.com/ArunNGun/openTeleprompt/releases/latest) |
+| 🪟 Windows (x64) | [Download .exe](https://github.com/ArunNGun/openTeleprompt/releases/latest) |
 
 **Landing page:** https://arunngun.github.io/openTeleprompt/
 
@@ -22,31 +20,36 @@ A free, open source voice-activated teleprompter that lives in your Mac's notch.
 
 ## Features
 
-- 🏝️ **Lives in the notch** — right below your camera, eyes stay natural
-- 🎙️ **Only hears you** — frequency analysis (85–3400 Hz), not just volume. Meeting audio from speakers won't trigger it. Only your voice does.
-- 🔇 **Invisible during screen share** — only you can see it
+- 🏝️ **Notch mode (macOS)** — lives right below your camera, eyes stay natural
+- 🖥️ **Top Bar + Classic mode** — pin to top or use as a draggable floating window (Mac & Windows)
+- 🎙️ **Voice-activated scrolling** — frequency analysis (85–3400 Hz), not just volume. Only your voice triggers it
+- 🔇 **Invisible during screen share** — only you can see it (macOS & Windows)
 - 🖱️ **Hover to pause** — instant freeze without clicking
-- ⚡ **Auto-scroll mode** — no mic needed
+- ✦ **Welcome/onboarding screen** — guided setup on first launch
+- ⚙️ **Quick settings** — gear icon in edit view, or click the tray icon
 - 💾 **Auto-saves scripts** — no cloud, no account
-- ⌨️ **Keyboard shortcuts** — ⌘⇧Space, ⌘⇧↑↓, ⌘⇧R
+- ⌨️ **Keyboard shortcuts** — ⌘⇧Space / Ctrl+Shift+Space, speed up/down, reset
 - 🌗 **Opacity control** — see through it to your camera feed
-- 🖥️ **Classic floating mode** — draggable, resizable, works on any Mac
 
 ---
 
-## v2.0 — Now built with Tauri + Rust
+## What's New
 
-v2.0 is a complete rewrite of the backend in Rust using [Tauri v2](https://tauri.app).
+### v2.2 — Windows Support
+- ✅ Full Windows support (Classic + Top Bar modes)
+- ✅ Welcome/onboarding screen on first launch
+- ✅ Settings gear icon in edit view
+- ✅ Native Windows tray icon with settings panel
+- ✅ Buttons fully clickable in read mode on Windows
+- ✅ Fixed icon (transparent bg, no white borders)
+- ✅ GitHub Actions CI — auto-builds Mac + Windows on every release
 
-**Same features, massively smaller:**
-
-| | v1.x (Electron) | v2.0 (Tauri) |
+### v2.0 — Tauri/Rust Rewrite
+| | v1.x (Electron) | v2.x (Tauri) |
 |---|---|---|
 | Binary size | ~150MB | **4.6MB** |
 | DMG size | ~80MB | **2.6MB** |
 | Memory usage | ~200MB | ~40MB |
-
-The frontend (HTML/CSS/JS) is identical. Only the native backend changed.
 
 ---
 
@@ -54,13 +57,14 @@ The frontend (HTML/CSS/JS) is identical. Only the native backend changed.
 
 ```
 openTeleprompt/
-├── src-tauri/        ← Rust backend (v2.0, primary)
-│   ├── src/lib.rs    ← All native commands
+├── src-tauri/          ← Rust backend
+│   ├── src/lib.rs      ← All native commands
 │   └── tauri.conf.json
-├── frontend/         ← Shared web frontend
-│   └── renderer/     ← HTML, CSS, JS
-├── electron/         ← Legacy Electron backend (v1.x)
-└── docs/             ← GitHub Pages landing page
+├── frontend/           ← Web frontend (shared Mac + Windows)
+│   └── renderer/       ← HTML, CSS, JS
+├── .github/workflows/  ← CI — auto-builds Mac + Windows on release tag
+├── electron/           ← Legacy Electron backend (v1.x, archived)
+└── docs/               ← GitHub Pages landing page
 ```
 
 ---
@@ -78,25 +82,22 @@ npm run dev
 npm run build
 ```
 
-**Requirements:** Rust + Cargo, Node.js
+**Requirements:** Rust + Cargo, Node.js 18+
 
 ---
 
-## First launch (macOS)
+## First Launch
 
-Right-click the app → Open → click **Open** in the security dialog.
+### macOS
+Right-click the app → **Open** → click **Open** in the security dialog.
 
-### ⚠️ "App is damaged" error?
-
-macOS tags apps downloaded from the internet with a "quarantine" flag. Since OpenTeleprompter isn't signed with an Apple Developer certificate, Gatekeeper blocks it with a misleading "damaged" warning — **the app is fine**.
-
-Fix it by running this in Terminal:
-
+If you see "App is damaged":
 ```bash
 xattr -cr /Applications/OpenTeleprompter.app
 ```
 
-**What this does:** `xattr` manages extended file attributes on macOS. The `-c` flag clears all attributes, and `-r` applies recursively to the entire `.app` bundle. This removes the quarantine flag that macOS attached when you downloaded the file. After running it once, the app opens normally forever — macOS stops asking.
+### Windows
+Run the `.exe` installer. If Windows SmartScreen blocks it, click **More info → Run anyway**.
 
 ---
 
