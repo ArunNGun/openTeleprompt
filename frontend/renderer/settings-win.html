@@ -290,6 +290,15 @@
 
     <div class="divider"></div>
 
+    <!-- Mode -->
+    <div class="section-label">Style</div>
+    <div style="display:flex; gap:4px; padding:4px 10px 8px;">
+      <button class="mode-btn active" id="mode-topbar" data-mode="notch" style="flex:1;padding:5px 0;border:none;border-radius:5px;font-family:inherit;font-size:10px;font-weight:600;cursor:pointer;background:rgba(99,102,241,0.8);color:#fff;transition:all 0.15s;">Top Bar</button>
+      <button class="mode-btn" id="mode-classic" data-mode="classic" style="flex:1;padding:5px 0;border:none;border-radius:5px;font-family:inherit;font-size:10px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.4);transition:all 0.15s;">Classic</button>
+    </div>
+
+    <div class="divider"></div>
+
     <!-- Voice -->
     <div class="section-label">Input</div>
 
@@ -425,6 +434,19 @@
     API.setConfig({ micDeviceId: e.target.value })
   })
 
+  // Mode switcher
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mode-btn').forEach(b => {
+        b.style.background = 'rgba(255,255,255,0.07)'
+        b.style.color = 'rgba(255,255,255,0.4)'
+      })
+      btn.style.background = 'rgba(99,102,241,0.8)'
+      btn.style.color = '#fff'
+      tauriInvoke('switch_mode', { mode: btn.dataset.mode })
+    })
+  })
+
   function applyConfig(c) {
     if (!c) return
     const si = SPEEDS.indexOf(c.scrollSpeed) !== -1 ? SPEEDS.indexOf(c.scrollSpeed) : 3
@@ -437,6 +459,13 @@
 
     document.getElementById('screenshare-toggle').checked = !!c.screenshareHidden
     document.getElementById('autoscroll-toggle').checked = !c.autoScroll
+    // Mode buttons
+    const currentMode = c.mode || 'notch'
+    document.querySelectorAll('.mode-btn').forEach(b => {
+      const active = b.dataset.mode === currentMode
+      b.style.background = active ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.07)'
+      b.style.color = active ? '#fff' : 'rgba(255,255,255,0.4)'
+    })
 
     const op = Math.round((c.opacity ?? 1) * 100)
     document.getElementById('opacity-slider').value = op
