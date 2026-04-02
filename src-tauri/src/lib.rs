@@ -164,13 +164,14 @@ fn switch_mode(app: AppHandle, state: State<AppState>, mode: String) {
     let _ = app.emit_to("prompter", "shortcut", "stop");
     let app2 = app.clone();
     std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(300));
+        std::thread::sleep(std::time::Duration::from_millis(200));
         if let Some(w) = get_prompter(&app2) { let _ = w.close(); }
-        for _ in 0..20 {
-            std::thread::sleep(std::time::Duration::from_millis(100));
+        // Wait up to 3s for the window to actually close
+        for _ in 0..60 {
+            std::thread::sleep(std::time::Duration::from_millis(50));
             if app2.get_webview_window("prompter").is_none() { break; }
         }
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(150));
         create_prompter_window(&app2);
     });
 }
@@ -643,19 +644,12 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            match event {
-                tauri::WindowEvent::CloseRequested { api, .. } => {
-                    if window.label() == "settings" {
-                        window.hide().ok();
-                        api.prevent_close();
-                    }
-                    // Prevent prompter from closing — hide instead
-                    if window.label() == "prompter" {
-                        window.hide().ok();
-                        api.prevent_close();
-                    }
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "settings" {
+                    window.hide().ok();
+                    api.prevent_close();
                 }
-                _ => {}
+                // Note: do NOT prevent prompter close — switch_mode needs to close and recreate it
             }
         })
         .run(tauri::generate_context!())
