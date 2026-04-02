@@ -370,8 +370,8 @@
       <div class="step">
         <div class="step-num">4</div>
         <div class="step-body">
-          <div class="step-title">Tweak from the tray icon</div>
-          <div class="step-desc">Click the menu bar tray icon to open settings — speed, sensitivity, mic, opacity and more.</div>
+          <div class="step-title">Tweak from the <span id="settings-access-label">menu bar icon</span></div>
+          <div class="step-desc" id="settings-access-desc">Click the icon in your menu bar to open settings — speed, sensitivity, mic, opacity and more.</div>
         </div>
       </div>
     </div>
@@ -514,6 +514,16 @@
 
 <script>
   const tauriInvoke = window.__TAURI__?.core?.invoke ?? (() => Promise.resolve(null))
+
+  // Platform-aware settings hint
+  const platform = navigator.platform || ''
+  const isWindows = platform.toLowerCase().includes('win') || navigator.userAgent.includes('Windows')
+  if (isWindows) {
+    const label = document.getElementById('settings-access-label')
+    const desc = document.getElementById('settings-access-desc')
+    if (label) label.textContent = 'system tray icon'
+    if (desc) desc.textContent = 'Click the OpenTeleprompter icon in your system tray (bottom-right) to open settings — speed, sensitivity, mic, opacity and more.'
+  }
 
   // Tab switching
   document.querySelectorAll('.tab').forEach(tab => {
