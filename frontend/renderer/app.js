@@ -70,7 +70,7 @@ function showView(name) {
   island.className = ''
   if (name === 'idle') {
     document.getElementById('view-idle').classList.add('active')
-    API.resizePrompter({ width: 220, height: 36 })
+    API.resizePrompter({ width: 220, height: API.platform === 'win32' ? 32 : 36 })
     API.setIgnoreMouse(false)
   } else if (name === 'edit') {
     document.getElementById('view-edit').classList.add('active')
@@ -467,6 +467,18 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'ArrowUp' && document.activeElement !== scriptInput) scrollPos = Math.max(0, scrollPos - 40); scriptText.style.transform = `translateY(${-scrollPos}px)`
   if (e.code === 'Escape') { stopMic(); showView('idle') }
 })
+
+// ── Windows: flat rectangle pill (no border radius) ────────
+if (API.platform === 'win32') {
+  const style = document.createElement('style')
+  style.textContent = `
+    #island, #island.state-edit, #island.state-read,
+    body.mode-classic #island, body.mode-classic #island.state-edit, body.mode-classic #island.state-read {
+      border-radius: 0 !important;
+    }
+  `
+  document.head.appendChild(style)
+}
 
 // ── Init ───────────────────────────────────────────────────
 setSpeed(speedIndex)
