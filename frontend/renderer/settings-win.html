@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OpenTeleprompter Settings</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 320px;
+      background: transparent;
+      font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    #panel {
+      width: 320px;
+      background: #1c1c1e;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ─────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .app-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .app-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .app-version {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      margin-top: 1px;
+    }
+
+    .quit-btn {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.3);
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: background 0.12s, color 0.12s;
+    }
+    .quit-btn:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+    /* ── Toggle row ─────────────────────────── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .toggle-row:hover { background: rgba(255,255,255,0.03); }
+    .toggle-row:last-child { border-bottom: none; }
+
+    .row-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.85);
+    }
+    .row-sub {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      margin-top: 2px;
+    }
+
+    /* Windows-style toggle */
+    .toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .track {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.12);
+      border: 1.5px solid rgba(255,255,255,0.15);
+      border-radius: 11px;
+      cursor: pointer;
+      transition: background 0.18s, border-color 0.18s;
+    }
+    .track::before {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      left: 3px;
+      top: 3px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 50%;
+      transition: transform 0.18s, background 0.18s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    input:checked + .track { background: #6366f1; border-color: #6366f1; }
+    input:checked + .track::before { transform: translateX(18px); background: #fff; }
+
+    /* ── Section label ──────────────────────── */
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      padding: 10px 16px 4px;
+    }
+
+    /* ── Slider row ─────────────────────────── */
+    .slider-wrap {
+      padding: 4px 16px 10px;
+    }
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .slider-label { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.85); }
+    .slider-val {
+      font-size: 12px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.06);
+      border-radius: 4px;
+      padding: 1px 6px;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.1);
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #6366f1;
+      cursor: pointer;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+      transition: box-shadow 0.15s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 0 5px rgba(99,102,241,0.25);
+    }
+
+    /* ── Mic select ─────────────────────────── */
+    .select-wrap {
+      padding: 4px 16px 10px;
+    }
+    select {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: rgba(255,255,255,0.75);
+      font-family: inherit;
+      font-size: 12px;
+      padding: 7px 10px;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    select:hover { background: rgba(255,255,255,0.09); }
+
+    /* ── Divider ────────────────────────────── */
+    .divider { height: 1px; background: rgba(255,255,255,0.05); margin: 2px 0; }
+
+    /* ── Volume meter ───────────────────────── */
+    .meter-wrap { padding: 0 16px 2px; }
+    .meter {
+      height: 3px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+    .meter-fill {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      background: #22c55e;
+      border-radius: 2px;
+      transition: width 0.06s;
+      width: 0%;
+    }
+
+    /* ── Shortcuts ──────────────────────────── */
+    .shortcut-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .shortcut-row:last-child { border-bottom: none; }
+    .sc-label { font-size: 12px; color: rgba(255,255,255,0.45); }
+    .sc-key {
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 11px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* ── Show prompter big toggle ───────────── */
+    .main-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(99,102,241,0.08);
+      border-bottom: 1px solid rgba(99,102,241,0.15);
+    }
+    .main-toggle-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #818cf8;
+    }
+  </style>
+</head>
+<body>
+<div id="panel">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="app-icon">✦</div>
+      <div>
+        <div class="app-name">OpenTeleprompter</div>
+        <div class="app-version">v2.1.0</div>
+      </div>
+    </div>
+    <button class="quit-btn" id="btn-quit">Quit</button>
+  </div>
+
+  <!-- Show Prompter -->
+  <div class="main-toggle">
+    <span class="main-toggle-label">Show Prompter</span>
+    <label class="toggle">
+      <input type="checkbox" id="prompter-toggle" checked>
+      <span class="track"></span>
+    </label>
+  </div>
+
+  <div id="settings-body">
+
+    <div class="divider"></div>
+
+    <!-- Voice -->
+    <div class="section-label">Input</div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="row-label">Voice Scroll</div>
+        <div class="row-sub">Scroll while speaking, pause when silent</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="autoscroll-toggle" checked>
+        <span class="track"></span>
+      </label>
+    </div>
+
+    <!-- Microphone -->
+    <div class="select-wrap">
+      <select id="mic-select">
+        <option value="default">Default microphone</option>
+      </select>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Playback -->
+    <div class="section-label">Playback</div>
+
+    <!-- Speed -->
+    <div class="slider-wrap">
+      <div class="slider-header">
+        <span class="slider-label">Scroll Speed</span>
+        <span class="slider-val" id="speed-display">1×</span>
+      </div>
+      <input type="range" id="speed-slider" min="0" max="7" step="1" value="3">
+    </div>
+
+    <!-- Sensitivity -->
+    <div class="slider-wrap">
+      <div class="slider-header">
+        <span class="slider-label">Voice Sensitivity</span>
+        <span class="slider-val" id="threshold-display">–35 dB</span>
+      </div>
+      <div class="meter-wrap">
+        <div class="meter"><div class="meter-fill" id="meter-fill"></div></div>
+      </div>
+      <input type="range" id="threshold-slider" min="0" max="100" step="1" value="24" style="margin-top:6px">
+    </div>
+
+    <!-- Opacity -->
+    <div class="slider-wrap">
+      <div class="slider-header">
+        <span class="slider-label">Opacity</span>
+        <span class="slider-val" id="opacity-display">100%</span>
+      </div>
+      <input type="range" id="opacity-slider" min="20" max="100" step="5" value="100">
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Privacy -->
+    <div class="section-label">Privacy</div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="row-label">Hide on Screen Share</div>
+        <div class="row-sub">Invisible in Zoom, Teams, Meet</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="screenshare-toggle">
+        <span class="track"></span>
+      </label>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Shortcuts -->
+    <div class="section-label">Shortcuts</div>
+
+    <div class="shortcut-row">
+      <span class="sc-label">Pause / Resume</span>
+      <span class="sc-key">Ctrl+Shift+Space</span>
+    </div>
+    <div class="shortcut-row">
+      <span class="sc-label">Speed Up / Down</span>
+      <span class="sc-key">Ctrl+Shift+↑↓</span>
+    </div>
+    <div class="shortcut-row">
+      <span class="sc-label">Reset to Top</span>
+      <span class="sc-key">Ctrl+Shift+R</span>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const tauriInvoke = window.__TAURI__?.core?.invoke ?? (() => Promise.resolve(null))
+  const tauriListen = window.__TAURI__?.event?.listen ?? (() => Promise.resolve(() => {}))
+
+  const API = {
+    getConfig:      () => tauriInvoke('get_config'),
+    setConfig:      (patch) => tauriInvoke('set_config', { patch }),
+    onConfigUpdate: (cb) => { tauriListen('config-update', (e) => cb(e.payload)) },
+    togglePrompter: () => tauriInvoke('toggle_prompter'),
+    resizeSettings: (dims) => tauriInvoke('resize_settings', { dims }),
+    quit:           () => tauriInvoke('quit_app'),
+  }
+
+  const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+  const MIN_T = 0.003, MAX_T = 0.562
+  const sliderToThreshold = v => MIN_T * Math.pow(MAX_T / MIN_T, v / 100)
+  const thresholdToSlider = t => Math.round(Math.log(t / MIN_T) / Math.log(MAX_T / MIN_T) * 100)
+  const thresholdToDb = t => (20 * Math.log10(Math.max(t, 0.0001))).toFixed(0)
+
+  async function populateMics() {
+    try {
+      const tmp = await navigator.mediaDevices.getUserMedia({ audio: true })
+      tmp.getTracks().forEach(t => t.stop())
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const mics = devices.filter(d => d.kind === 'audioinput')
+      const sel = document.getElementById('mic-select')
+      sel.innerHTML = ''
+      mics.forEach(d => {
+        const opt = document.createElement('option')
+        opt.value = d.deviceId
+        opt.textContent = d.label || `Microphone (${d.deviceId.slice(0,8)})`
+        sel.appendChild(opt)
+      })
+      const cfg = await API.getConfig()
+      if (cfg?.micDeviceId) sel.value = cfg.micDeviceId
+    } catch(e) {}
+  }
+
+  document.getElementById('mic-select').addEventListener('change', e => {
+    API.setConfig({ micDeviceId: e.target.value })
+  })
+
+  function applyConfig(c) {
+    if (!c) return
+    const si = SPEEDS.indexOf(c.scrollSpeed) !== -1 ? SPEEDS.indexOf(c.scrollSpeed) : 3
+    document.getElementById('speed-slider').value = si
+    document.getElementById('speed-display').textContent = SPEEDS[si] + '×'
+
+    const tv = thresholdToSlider(c.threshold)
+    document.getElementById('threshold-slider').value = tv
+    document.getElementById('threshold-display').textContent = thresholdToDb(c.threshold) + ' dB'
+
+    document.getElementById('screenshare-toggle').checked = !!c.screenshareHidden
+    document.getElementById('autoscroll-toggle').checked = !c.autoScroll
+
+    const op = Math.round((c.opacity ?? 1) * 100)
+    document.getElementById('opacity-slider').value = op
+    document.getElementById('opacity-display').textContent = op + '%'
+  }
+
+  API.onConfigUpdate(applyConfig)
+
+  document.getElementById('speed-slider').addEventListener('input', e => {
+    const v = +e.target.value
+    document.getElementById('speed-display').textContent = SPEEDS[v] + '×'
+    API.setConfig({ scrollSpeed: SPEEDS[v] })
+  })
+
+  document.getElementById('threshold-slider').addEventListener('input', e => {
+    const v = +e.target.value
+    const t = sliderToThreshold(v)
+    document.getElementById('threshold-display').textContent = thresholdToDb(t) + ' dB'
+    API.setConfig({ threshold: t })
+  })
+
+  document.getElementById('opacity-slider').addEventListener('input', e => {
+    const v = +e.target.value
+    document.getElementById('opacity-display').textContent = v + '%'
+    API.setConfig({ opacity: v / 100 })
+  })
+
+  document.getElementById('autoscroll-toggle').addEventListener('change', e => {
+    API.setConfig({ autoScroll: !e.target.checked })
+  })
+
+  document.getElementById('screenshare-toggle').addEventListener('change', e => {
+    API.setConfig({ screenshareHidden: e.target.checked })
+  })
+
+  document.getElementById('btn-quit').addEventListener('click', () => API.quit())
+
+  // Volume meter
+  let meterStream = null, meterInterval = null
+  async function startMeter() {
+    if (meterStream) return
+    try {
+      meterStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+      const ctx = new AudioContext()
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = 1024
+      ctx.createMediaStreamSource(meterStream).connect(analyser)
+      const data = new Float32Array(analyser.fftSize)
+      const fill = document.getElementById('meter-fill')
+      meterInterval = setInterval(() => {
+        analyser.getFloatTimeDomainData(data)
+        let sum = 0; for (let i = 0; i < data.length; i++) sum += data[i] * data[i]
+        const rms = Math.sqrt(sum / data.length)
+        const db = rms > 0 ? 20 * Math.log10(rms) : -100
+        const pct = Math.max(0, Math.min(100, (db + 60) / 60 * 100))
+        fill.style.width = pct.toFixed(1) + '%'
+        fill.style.background = rms > sliderToThreshold(+document.getElementById('threshold-slider').value) ? '#22c55e' : 'rgba(255,255,255,0.15)'
+      }, 32)
+    } catch(e) {}
+  }
+  function stopMeter() {
+    if (meterInterval) { clearInterval(meterInterval); meterInterval = null }
+    if (meterStream) { meterStream.getTracks().forEach(t => t.stop()); meterStream = null }
+    document.getElementById('meter-fill').style.width = '0%'
+  }
+
+  document.getElementById('prompter-toggle').addEventListener('change', async e => {
+    const isVisible = await API.togglePrompter()
+    e.target.checked = isVisible
+    document.getElementById('settings-body').style.opacity = isVisible ? '1' : '0.4'
+    document.getElementById('settings-body').style.pointerEvents = isVisible ? '' : 'none'
+    if (isVisible) startMeter(); else stopMeter()
+  })
+
+  // Auto-resize to content
+  function fitWindow() {
+    const h = document.getElementById('panel').getBoundingClientRect().height
+    API.resizeSettings({ height: Math.ceil(h) + 2 })
+  }
+  new ResizeObserver(fitWindow).observe(document.getElementById('panel'))
+
+  // Close on blur
+  window.addEventListener('blur', () => {
+    setTimeout(() => { if (!document.hasFocus()) tauriInvoke('hide_settings') }, 150)
+  })
+
+  async function init() {
+    const cfg = await API.getConfig()
+    applyConfig(cfg)
+    await populateMics()
+    startMeter()
+  }
+
+  init()
+</script>
+</body>
+</html>

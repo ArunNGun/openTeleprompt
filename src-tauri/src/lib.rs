@@ -394,6 +394,12 @@ fn get_settings_position(app: &AppHandle) -> (f64, f64) {
 
 fn show_settings(app: &AppHandle) {
     let (x, y) = get_settings_position(app);
+
+    #[cfg(target_os = "windows")]
+    let (settings_url, win_w, win_h) = ("renderer/settings-win.html", 320.0_f64, 480.0_f64);
+    #[cfg(not(target_os = "windows"))]
+    let (settings_url, win_w, win_h) = ("renderer/settings.html", 280.0_f64, 380.0_f64);
+
     if let Some(w) = get_settings(app) {
         let _ = w.set_position(LogicalPosition::new(x, y));
         let _ = w.show();
@@ -401,7 +407,7 @@ fn show_settings(app: &AppHandle) {
     } else {
         let _ = tauri::WebviewWindowBuilder::new(
             app, "settings",
-            tauri::WebviewUrl::App("renderer/settings.html".into()),
+            tauri::WebviewUrl::App(settings_url.into()),
         )
         .title("Settings")
         .decorations(false)
@@ -409,7 +415,7 @@ fn show_settings(app: &AppHandle) {
         .always_on_top(true)
         .skip_taskbar(true)
         .resizable(false)
-        .inner_size(280.0, 380.0)
+        .inner_size(win_w, win_h)
         .position(x, y)
         .build()
         .ok();
