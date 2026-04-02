@@ -588,7 +588,7 @@ pub fn run() {
             let app_tray = app_handle.clone();
             app_handle.on_tray_icon_event(move |tray, event| {
                 // Feed event to positioner so it knows tray position
-                tauri_plugin_positioner::on_tray_icon_event(tray, &event);
+                tauri_plugin_positioner::on_tray_event(tray, &event);
                 if let TrayIconEvent::Click {
                     button: MouseButton::Left,
                     button_state: MouseButtonState::Up, ..
