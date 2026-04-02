@@ -515,7 +515,7 @@
   function fitWindow() {
     const h = document.getElementById('panel').getBoundingClientRect().height
     const finalH = Math.ceil(h) + 2
-    API.resizeSettings({ height: finalH, stickToTaskbar: true })
+    API.resizeSettings({ height: finalH })
   }
   new ResizeObserver(fitWindow).observe(document.getElementById('panel'))
 
