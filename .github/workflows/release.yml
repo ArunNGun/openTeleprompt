@@ -58,7 +58,7 @@ jobs:
 
   build-mac-intel:
     name: Build macOS (Intel)
-    runs-on: macos-13
+    runs-on: macos-latest
     needs: create-release
     steps:
       - uses: actions/checkout@v4
