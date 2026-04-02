@@ -25,16 +25,16 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        // On Windows default to classic mode — no physical notch
+        // On Windows: classic mode (no notch), screenshare protection off (causes render issues)
         #[cfg(target_os = "windows")]
-        let default_mode = "classic".to_string();
+        let (default_mode, default_screenshare) = ("classic".to_string(), false);
         #[cfg(not(target_os = "windows"))]
-        let default_mode = "notch".to_string();
+        let (default_mode, default_screenshare) = ("notch".to_string(), true);
 
         Self {
             scroll_speed: 1.0,
             threshold: 0.018,
-            screenshare_hidden: true,
+            screenshare_hidden: default_screenshare,
             mode: default_mode,
             opacity: 1.0,
             auto_scroll: false,
@@ -503,10 +503,27 @@ pub fn run() {
                 let scale    = monitor.as_ref().map(|m| m.scale_factor()).unwrap_or(1.0);
                 let screen_w = monitor.as_ref().map(|m| m.size().width  as f64 / scale).unwrap_or(1440.0);
                 let screen_h = monitor.as_ref().map(|m| m.size().height as f64 / scale).unwrap_or(900.0);
-                let win_w = 440.0_f64;
-                let win_h = 680.0_f64;
+                let win_w = 460.0_f64;
+                let win_h = 600.0_f64;
                 let wx = (screen_w - win_w) / 2.0;
                 let wy = (screen_h - win_h) / 2.0;
+
+                // On Windows: use decorations (no transparent borderless) to avoid invisible window bug
+                #[cfg(target_os = "windows")]
+                let _ = tauri::WebviewWindowBuilder::new(
+                    app, "welcome",
+                    tauri::WebviewUrl::App("renderer/welcome.html".into()),
+                )
+                .title("Welcome to OpenTeleprompter")
+                .decorations(true)
+                .transparent(false)
+                .always_on_top(true)
+                .resizable(false)
+                .inner_size(win_w, win_h)
+                .position(wx, wy)
+                .build();
+
+                #[cfg(not(target_os = "windows"))]
                 let _ = tauri::WebviewWindowBuilder::new(
                     app, "welcome",
                     tauri::WebviewUrl::App("renderer/welcome.html".into()),
@@ -539,7 +556,11 @@ pub fn run() {
                 let q = MenuItem::with_id(app, "quit",     "Quit",     true, None::<&str>)?;
                 let menu = Menu::with_items(app, &[&s, &q])?;
                 TrayIconBuilder::with_id("main-tray")
-                    .icon(icon).tooltip("OpenTeleprompter").menu(&menu).build(app)?;
+                    .icon(icon)
+                    .tooltip("OpenTeleprompter")
+                    .menu(&menu)
+                    .show_menu_on_left_click(false)
+                    .build(app)?;
             }
 
             let app_tray = app_handle.clone();
@@ -548,6 +569,16 @@ pub fn run() {
                     button: MouseButton::Left,
                     button_state: MouseButtonState::Up, ..
                 } = event { toggle_settings(&app_tray); }
+            });
+
+            // Handle Windows tray menu item clicks
+            let app_menu = app_handle.clone();
+            app_handle.on_menu_event(move |_app, event| {
+                match event.id().as_ref() {
+                    "settings" => toggle_settings(&app_menu),
+                    "quit"     => app_menu.exit(0),
+                    _ => {}
+                }
             });
 
             // ── Shortcuts ──────────────────────────────────
