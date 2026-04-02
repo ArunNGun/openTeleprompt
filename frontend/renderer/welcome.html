@@ -515,9 +515,21 @@
 <script>
   const tauriInvoke = window.__TAURI__?.core?.invoke ?? (() => Promise.resolve(null))
 
-  // Platform-aware settings hint
+  // Platform detection
   const platform = navigator.platform || ''
   const isWindows = platform.toLowerCase().includes('win') || navigator.userAgent.includes('Windows')
+
+  // Remove border radius on Windows — native title bar handles window chrome
+  if (isWindows) {
+    const style = document.createElement('style')
+    style.textContent = `
+      #panel, .header, .cta-btn, .tab, .step-num, .gh-btn, .version-badge { border-radius: 0 !important; }
+      #panel { border: none !important; }
+    `
+    document.head.appendChild(style)
+  }
+
+  // Platform-aware settings hint
   if (isWindows) {
     const label = document.getElementById('settings-access-label')
     const desc = document.getElementById('settings-access-desc')
