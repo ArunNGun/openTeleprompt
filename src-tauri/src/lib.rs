@@ -254,7 +254,7 @@ fn resize_settings(app: AppHandle, dims: serde_json::Value) -> Result<(), String
 
     // Use correct width per platform, cap height to screen
     #[cfg(target_os = "windows")]
-    let panel_w = 320.0_f64;
+    let panel_w = 220.0_f64;
     #[cfg(not(target_os = "windows"))]
     let panel_w = 280.0_f64;
 
@@ -413,7 +413,7 @@ fn show_settings(app: &AppHandle) {
     let (x, y) = get_settings_position(app);
 
     #[cfg(target_os = "windows")]
-    let (settings_url, win_w, win_h) = ("renderer/settings-win.html", 320.0_f64, 620.0_f64);
+    let (settings_url, win_w, win_h) = ("renderer/settings-win.html", 220.0_f64, 500.0_f64);
     #[cfg(not(target_os = "windows"))]
     let (settings_url, win_w, win_h) = ("renderer/settings.html", 280.0_f64, 380.0_f64);
 
