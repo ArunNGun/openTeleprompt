@@ -69,7 +69,7 @@ function showView(name) {
   island.className = ''
   if (name === 'idle') {
     document.getElementById('view-idle').classList.add('active')
-    API.resizePrompter({ width: 220, height: 50 })
+    API.resizePrompter({ width: 220, height: 46 })
     API.setIgnoreMouse(false)
   } else if (name === 'edit') {
     document.getElementById('view-edit').classList.add('active')
