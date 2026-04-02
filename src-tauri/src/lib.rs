@@ -251,7 +251,19 @@ fn resize_settings(app: AppHandle, dims: serde_json::Value) -> Result<(), String
     let Some(w) = get_settings(&app) else { return Ok(()) };
     let height = dims.get("height").and_then(|v| v.as_f64()).unwrap_or(380.0);
     let pos = w.outer_position().map_err(|e| e.to_string())?;
-    w.set_size(LogicalSize::new(280.0, height)).map_err(|e| e.to_string())?;
+
+    // Use correct width per platform, cap height to screen
+    #[cfg(target_os = "windows")]
+    let panel_w = 320.0_f64;
+    #[cfg(not(target_os = "windows"))]
+    let panel_w = 280.0_f64;
+
+    let monitor = w.current_monitor().ok().flatten();
+    let scale = monitor.as_ref().map(|m| m.scale_factor()).unwrap_or(1.0);
+    let screen_h = monitor.map(|m| m.size().height as f64 / scale).unwrap_or(900.0);
+    let capped_h = height.min(screen_h - 80.0);
+
+    w.set_size(LogicalSize::new(panel_w, capped_h)).map_err(|e| e.to_string())?;
     w.set_position(pos).map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -401,7 +413,7 @@ fn show_settings(app: &AppHandle) {
     let (x, y) = get_settings_position(app);
 
     #[cfg(target_os = "windows")]
-    let (settings_url, win_w, win_h) = ("renderer/settings-win.html", 320.0_f64, 480.0_f64);
+    let (settings_url, win_w, win_h) = ("renderer/settings-win.html", 320.0_f64, 620.0_f64);
     #[cfg(not(target_os = "windows"))]
     let (settings_url, win_w, win_h) = ("renderer/settings.html", 280.0_f64, 380.0_f64);
 
