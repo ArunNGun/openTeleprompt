@@ -4,11 +4,20 @@
   "version": "2.1.0",
   "identifier": "com.openteleprompter.teleprompter",
   "build": {
-    "frontendDist": "../frontend"
+    "frontendDist": "../frontend/renderer"
   },
   "app": {
     "withGlobalTauri": true,
-    "windows": [],
+    "windows": [
+      {
+        "label": "main",
+        "title": "OpenTeleprompter",
+        "width": 1200,
+        "height": 800,
+        "alwaysOnTop": true,
+        "resizable": true
+      }
+    ],
     "security": {
       "csp": null,
       "dangerousDisableAssetCspModification": true
