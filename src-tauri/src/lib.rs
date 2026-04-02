@@ -263,8 +263,11 @@ fn resize_settings(app: AppHandle, dims: serde_json::Value) -> Result<(), String
     let capped_h = height.min(screen_h - 40.0);
 
     w.set_size(LogicalSize::new(panel_w, capped_h)).map_err(|e| e.to_string())?;
-    // Re-anchor to tray after resize so position stays correct
-    let _ = w.move_window(Position::TrayCenter);
+    // Re-anchor to tray after resize (ignore error — positioner may not be ready yet)
+    if w.move_window(Position::TrayCenter).is_err() {
+        let pos = w.outer_position().map_err(|e| e.to_string())?;
+        let _ = w.set_position(pos);
+    }
     Ok(())
 }
 
@@ -384,6 +387,23 @@ fn create_prompter_window(app: &AppHandle) {
     apply_screenshare_mode(&window, cfg.screenshare_hidden);
 }
 
+fn position_settings_window(app: &AppHandle, w: &WebviewWindow) {
+    // Try positioner first — requires tray event to have fired at least once
+    if w.move_window(Position::TrayCenter).is_err() {
+        // Fallback: manual positioning near tray
+        let scale = app.primary_monitor().ok().flatten().map(|m| m.scale_factor()).unwrap_or(1.0);
+        let screen_w = app.primary_monitor().ok().flatten().map(|m| m.size().width as f64 / scale).unwrap_or(1440.0);
+        let screen_h = app.primary_monitor().ok().flatten().map(|m| m.size().height as f64 / scale).unwrap_or(900.0);
+        #[cfg(target_os = "windows")]
+        let (panel_w, panel_h) = (220.0_f64, 400.0_f64);
+        #[cfg(not(target_os = "windows"))]
+        let (panel_w, panel_h) = (280.0_f64, 380.0_f64);
+        let x = screen_w - panel_w - 12.0;
+        let y = screen_h - panel_h - 48.0;
+        let _ = w.set_position(LogicalPosition::new(x, y));
+    }
+}
+
 fn show_settings(app: &AppHandle) {
     #[cfg(target_os = "windows")]
     let (settings_url, win_w, win_h) = ("renderer/settings-win.html", 220.0_f64, 500.0_f64);
@@ -391,7 +411,7 @@ fn show_settings(app: &AppHandle) {
     let (settings_url, win_w, win_h) = ("renderer/settings.html", 280.0_f64, 380.0_f64);
 
     if let Some(w) = get_settings(app) {
-        let _ = w.move_window(Position::TrayCenter);
+        position_settings_window(app, &w);
         let _ = w.show();
         let _ = w.set_focus();
     } else {
@@ -409,7 +429,7 @@ fn show_settings(app: &AppHandle) {
         .build()
         .ok();
         if let Some(w) = get_settings(app) {
-            let _ = w.move_window(Position::TrayCenter);
+            position_settings_window(app, &w);
             w.set_always_on_top(true).ok();
             w.set_focus().ok();
         }
@@ -566,7 +586,9 @@ pub fn run() {
             }
 
             let app_tray = app_handle.clone();
-            app_handle.on_tray_icon_event(move |_, event| {
+            app_handle.on_tray_icon_event(move |tray, event| {
+                // Feed event to positioner so it knows tray position
+                tauri_plugin_positioner::on_tray_icon_event(tray, &event);
                 if let TrayIconEvent::Click {
                     button: MouseButton::Left,
                     button_state: MouseButtonState::Up, ..
