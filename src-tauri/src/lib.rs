@@ -266,10 +266,16 @@ fn resize_settings(app: AppHandle, dims: serde_json::Value) -> Result<(), String
     let capped_h = height.min(screen_h - 40.0);
 
     w.set_size(LogicalSize::new(panel_w, capped_h)).map_err(|e| e.to_string())?;
-    // Re-anchor to tray after resize (ignore error — positioner may not be ready yet)
+    // Re-anchor after resize — use positioner if available, else keep current position
     if w.move_window(Position::TrayCenter).is_err() {
-        let pos = w.outer_position().map_err(|e| e.to_string())?;
-        let _ = w.set_position(pos);
+        // Positioner not ready — fall back to bottom-right corner
+        let monitor = w.current_monitor().ok().flatten();
+        let scale = monitor.as_ref().map(|m| m.scale_factor()).unwrap_or(1.0);
+        let screen_w = monitor.as_ref().map(|m| m.size().width as f64 / scale).unwrap_or(1440.0);
+        let screen_h = monitor.map(|m| m.size().height as f64 / scale).unwrap_or(900.0);
+        let x = screen_w - panel_w - 12.0;
+        let y = screen_h - capped_h - 48.0;
+        let _ = w.set_position(LogicalPosition::new(x, y));
     }
     Ok(())
 }
@@ -391,20 +397,24 @@ fn create_prompter_window(app: &AppHandle) {
 }
 
 fn position_settings_window(app: &AppHandle, w: &WebviewWindow) {
-    // Try positioner first — requires tray event to have fired at least once
-    if w.move_window(Position::TrayCenter).is_err() {
-        // Fallback: manual positioning near tray
-        let scale = app.primary_monitor().ok().flatten().map(|m| m.scale_factor()).unwrap_or(1.0);
-        let screen_w = app.primary_monitor().ok().flatten().map(|m| m.size().width as f64 / scale).unwrap_or(1440.0);
-        let screen_h = app.primary_monitor().ok().flatten().map(|m| m.size().height as f64 / scale).unwrap_or(900.0);
-        #[cfg(target_os = "windows")]
-        let (panel_w, panel_h) = (220.0_f64, 400.0_f64);
-        #[cfg(not(target_os = "windows"))]
-        let (panel_w, panel_h) = (280.0_f64, 380.0_f64);
-        let x = screen_w - panel_w - 12.0;
-        let y = screen_h - panel_h - 48.0;
-        let _ = w.set_position(LogicalPosition::new(x, y));
+    let scale = app.primary_monitor().ok().flatten().map(|m| m.scale_factor()).unwrap_or(1.0);
+    let screen_w = app.primary_monitor().ok().flatten().map(|m| m.size().width as f64 / scale).unwrap_or(1440.0);
+    let screen_h = app.primary_monitor().ok().flatten().map(|m| m.size().height as f64 / scale).unwrap_or(900.0);
+
+    #[cfg(target_os = "windows")]
+    let (panel_w, panel_h) = (220.0_f64, 400.0_f64);
+    #[cfg(not(target_os = "windows"))]
+    let (panel_w, panel_h) = (280.0_f64, 380.0_f64);
+
+    // Try positioner (works after tray has been clicked at least once)
+    if w.move_window(Position::TrayCenter).is_ok() {
+        return;
     }
+
+    // Fallback: bottom-right corner above taskbar (safe default for all platforms)
+    let x = screen_w - panel_w - 12.0;
+    let y = screen_h - panel_h - 48.0;
+    let _ = w.set_position(LogicalPosition::new(x, y));
 }
 
 fn show_settings(app: &AppHandle) {
