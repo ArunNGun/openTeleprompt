@@ -385,8 +385,11 @@ fn create_prompter_window(app: &AppHandle) {
 }
 
 fn get_settings_position(app: &AppHandle) -> (f64, f64) {
-    let win_w: f64 = 280.0;
-    let win_h: f64 = 380.0;
+    #[cfg(target_os = "windows")]
+    let (win_w, win_h) = (220.0_f64, 500.0_f64);
+    #[cfg(not(target_os = "windows"))]
+    let (win_w, win_h) = (280.0_f64, 380.0_f64);
+
     let scale = app.primary_monitor().ok().flatten().map(|m| m.scale_factor()).unwrap_or(1.0);
     let screen_w = app.primary_monitor().ok().flatten().map(|m| m.size().width as f64 / scale).unwrap_or(1440.0);
 
@@ -402,7 +405,9 @@ fn get_settings_position(app: &AppHandle) -> (f64, f64) {
             };
             let mut x = tx + tw / 2.0 - win_w / 2.0;
             x = x.max(8.0).min(screen_w - win_w - 8.0);
-            let y = if cfg!(target_os = "windows") { ty - win_h - 4.0 } else { ty + th + 4.0 };
+            // Windows: panel bottom flush with taskbar top (ty = taskbar top)
+            // macOS: panel top just below tray icon
+            let y = if cfg!(target_os = "windows") { ty - win_h } else { ty + th + 4.0 };
             return (x, y);
         }
     }
