@@ -1,0 +1,600 @@
+/* ── Theme Variables ─────────────────────────────────────── */
+:root, [data-theme="dark"] {
+  --bg:              #000000;
+  --bg-secondary:    rgba(255,255,255,0.06);
+  --bg-hover:        rgba(255,255,255,0.10);
+  --bg-active:       rgba(129,140,248,0.20);
+  --bg-toolbar:      rgba(255,255,255,0.04);
+  --border:          rgba(255,255,255,0.06);
+  --text-primary:    rgba(255,255,255,0.85);
+  --text-secondary:  rgba(255,255,255,0.40);
+  --text-muted:      rgba(255,255,255,0.20);
+  --text-label:      rgba(255,255,255,0.35);
+  --accent:          #818cf8;
+  --accent-bg:       rgba(129,140,248,0.20);
+  --inset-glow:      rgba(255,255,255,0.06);
+  --inset-border:    rgba(255,255,255,0.04);
+  --read-controls-bg: linear-gradient(to top, rgba(17,17,17,0.99) 70%, transparent);
+  --script-text:     rgba(255,255,255,0.92);
+  --caret:           #818cf8;
+}
+
+[data-theme="light"] {
+  --bg:              #f0f0f0;
+  --bg-secondary:    rgba(0,0,0,0.06);
+  --bg-hover:        rgba(0,0,0,0.10);
+  --bg-active:       rgba(99,102,241,0.15);
+  --bg-toolbar:      rgba(0,0,0,0.03);
+  --border:          rgba(0,0,0,0.08);
+  --text-primary:    rgba(0,0,0,0.82);
+  --text-secondary:  rgba(0,0,0,0.45);
+  --text-muted:      rgba(0,0,0,0.25);
+  --text-label:      rgba(0,0,0,0.35);
+  --accent:          #6366f1;
+  --accent-bg:       rgba(99,102,241,0.15);
+  --inset-glow:      rgba(0,0,0,0.04);
+  --inset-border:    rgba(0,0,0,0.06);
+  --read-controls-bg: linear-gradient(to top, rgba(230,230,230,0.99) 70%, transparent);
+  --script-text:     rgba(0,0,0,0.88);
+  --caret:           #6366f1;
+}
+
+/* ── Reset ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: 'Syne', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* Notch mode: transparent area must never block clicks.
+     Only #island itself gets pointer-events. */
+  pointer-events: none;
+}
+
+/* Classic mode: body must be interactive (dragging, etc.) */
+body.mode-classic, body.mode-classic #root {
+  pointer-events: auto;
+}
+
+/* ── Island — Apple Dynamic Island for macOS notch ──────────
+   Window: full-screen-width transparent, y=0 (screen top, level=27).
+   Notch on Mac14,2 (MBA M2 13"): 209×38px logical, centered at x=751.
+   Island idle state exactly matches the physical notch — seamless.
+   Expands downward like Apple Dynamic Island on iPhone 14+.
+─────────────────────────────────────────────── */
+#island {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+
+  /* Idle: notch dimensions + 4px bleed (matches boring.notch: width - leftPad - rightPad + 4) */
+  width: 200px;
+  height: 35px;
+
+  /* Flat top (flush with bezel), rounded bottom corners */
+  border-radius: 0 0 22px 22px;
+
+  background: var(--bg);
+  overflow: hidden;
+
+  /* Subtle inner highlight at bottom to give depth vs pure black */
+  box-shadow:
+    inset 0 -1px 0 var(--inset-glow),
+    inset 0 0 0 0.5px var(--inset-border);
+
+  /* Apple Dynamic Island easing — fast deceleration, crisp snap */
+  transition:
+    width         0.4s cubic-bezier(0.32, 0.72, 0, 1),
+    height        0.4s cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow    0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    background    0.3s ease;
+
+  user-select: none;
+  -webkit-user-select: none;
+
+  /* Re-enable pointer events on the island itself (body is pointer-events:none) */
+  pointer-events: all;
+}
+
+/* Hover: subtle grow to hint interactivity */
+#island:not(.state-edit):not(.state-read):hover {
+  width: 200px;
+  height: 35px;
+  border-radius: 0 0 24px 24px;
+  box-shadow:
+    inset 0 -1px 0 var(--inset-glow),
+    inset 0 0 0 0.5px var(--inset-border);
+}
+
+/* Edit mode: full script editor, grows DOWN */
+#island.state-edit {
+  top: 0;
+  width: 560px;
+  height: 340px;
+  border-radius: 0 0 26px 26px;
+  box-shadow: 0 7px 10px rgba(0, 0, 0, 0.532), 0 2px 8px rgba(0,0,0,0.6);
+  cursor: default;
+}
+
+/* Read mode: teleprompter scroll view, grows DOWN */
+#island.state-read {
+  top: 0;
+  width: 440px;
+  height: 205px;
+  border-radius: 0 0 26px 26px;
+  box-shadow: 0 7px 10px rgba(0, 0, 0, 0.532), 0 2px 8px rgba(0,0,0,0.6);
+  cursor: default;
+}
+
+#island.state-edit,
+#island.state-read {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Anti-notch concave corners — render as siblings in App.jsx */
+.notch-corner {
+  position: fixed;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  /* Collapse: instant */
+  transition: opacity 0s;
+}
+.notch-corner.visible {
+  opacity: 1;
+  /* Appear: wait for island to finish expanding */
+  transition: opacity 0.2s ease 0.37s;
+}
+.notch-corner-left {
+  border-top-right-radius: 12px;
+  box-shadow: 10px 0 0 0 var(--bg);
+}
+.notch-corner-right {
+  border-top-left-radius: 12px;
+  box-shadow: -10px 0 0 0 var(--bg);
+}
+
+
+
+/* ── Classic mode (floating pill, normal window level) ─────── */
+body.mode-classic #island {
+  position: fixed;
+  top: 8px; left: 8px;
+  width: 180px;
+  height: 36px;
+  border-radius: 18px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  transform: none;
+  transition:
+    width         0.4s cubic-bezier(0.32, 0.72, 0, 1),
+    height        0.4s cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+body.mode-classic #island:not(.state-edit):not(.state-read):hover {
+  width: 180px; height: 36px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+body.mode-classic #island.state-edit {
+  width: 540px;
+  height: 320px;
+  border-radius: 14px;
+}
+body.mode-classic #island.state-read {
+  width: 420px;
+  height: 200px;
+  border-radius: 14px;
+}
+
+/* ── Views ────────────────────────────────────────────────── */
+.view {
+  position: absolute; inset: 0;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s cubic-bezier(0.32, 0.72, 0, 1) 0.1s;
+  display: flex; flex-direction: column;
+}
+.view.active { opacity: 1; pointer-events: all; transition-delay: 0.12s; }
+
+/* ── IDLE VIEW — Dynamic Island collapsed notch ────────────── */
+#view-idle {
+  justify-content: center;
+  align-items: center;
+}
+
+.idle-notch-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* The content inside the collapsed pill */
+.idle-pill-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  transition: gap 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Status dot */
+.idle-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.4s ease, box-shadow 0.4s ease, transform 0.3s ease;
+  /* Gentle idle breathe */
+  animation: dot-breathe-idle 3s ease-in-out infinite;
+}
+.idle-status-dot.pulse {
+  animation: dot-breathe-active 1.4s ease-in-out infinite;
+}
+@keyframes dot-breathe-idle {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(1.1); }
+}
+@keyframes dot-breathe-active {
+  0%, 100% { transform: scale(1);    opacity: 1; }
+  50%       { transform: scale(1.3); opacity: 0.7; }
+}
+
+/* Label — hidden by default, slides in on hover */
+.idle-pill-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: transparent;
+  letter-spacing: 0.04em;
+  max-width: 0;
+  overflow: hidden;
+  transition:
+    color   0.25s ease,
+    max-width 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+.idle-pill-content.hovered .idle-pill-label {
+  color: var(--text-secondary);
+  max-width: 80px;
+}
+
+/* Chevron — hidden by default */
+.idle-chevron {
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.2s ease, transform 0.25s ease;
+  flex-shrink: 0;
+}
+.idle-pill-content.hovered .idle-chevron {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Legacy idle-inner (classic mode) */
+.idle-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+.idle-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.idle-dot.listening {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e88;
+  animation: breathe 2s ease-in-out infinite;
+}
+.idle-dot.paused {
+  background: #f59e0b;
+}
+@keyframes breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+.idle-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex: 1;
+}
+.idle-btn {
+  background: var(--bg-secondary);
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.idle-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* ── EDIT VIEW ────────────────────────────────────────────── */
+.edit-header {
+  display: flex; align-items: center;
+  padding: 10px 12px 6px; gap: 6px;
+  flex-shrink: 0;
+}
+.view-title {
+  flex: 1;
+  font-size: 11px; font-weight: 700;
+  color: var(--text-label);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+#script-list {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 0 12px 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+#script-list::-webkit-scrollbar { display: none; }
+#script-list .script-item { flex-shrink: 0; }
+.script-item {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--bg-secondary); border-radius: 6px;
+  padding: 3px 8px; cursor: pointer;
+  transition: background 0.15s; flex-shrink: 0;
+}
+.script-item:hover { background: var(--bg-hover); }
+.script-item.active { background: var(--bg-active); }
+.script-name {
+  font-size: 10px; color: var(--text-secondary);
+  font-family: 'DM Mono', monospace;
+  max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.script-del {
+  background: none; border: none;
+  color: var(--text-muted); cursor: pointer;
+  font-size: 9px; padding: 0; line-height: 1;
+}
+.script-del:hover { color: #ef4444; }
+
+#script-input {
+  flex: 1; background: transparent; border: none;
+  outline: none; resize: none;
+  padding: 4px 16px 12px;
+  font-family: 'DM Mono', monospace; font-size: 13px;
+  line-height: 1.7; color: rgba(255,255,255,0.85);
+  caret-color: #818cf8;
+}
+#script-input::placeholder { color: rgba(255,255,255,0.2); }
+#script-stats {
+  padding: 4px 16px 8px;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--text-muted);
+  display: flex; gap: 10px; flex-shrink: 0;
+}
+
+/* ── READ VIEW ────────────────────────────────────────────── */
+#progress-bar {
+  position: absolute; top: 0; left: 0;
+  height: 2px; width: 0%;
+  background: linear-gradient(to right, #818cf8, #22c55e);
+  border-radius: 0 2px 2px 0; z-index: 10;
+  transition: width 0.1s linear;
+}
+#countdown-overlay {
+  position: absolute; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 10, 10, 0); border-radius: 26px;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+#countdown-overlay.active { opacity: 1; pointer-events: all; }
+#countdown-num {
+  font-size: 56px; font-weight: 800; color: #fff;
+  animation: pop 0.9s ease-out;
+}
+@keyframes pop {
+  0%   { transform: scale(1.4); opacity: 0; }
+  20%  { transform: scale(1);   opacity: 1; }
+  80%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+#scroll-viewport {
+  flex: 1; overflow-y: hidden; position: relative;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+}
+#scroll-viewport::-webkit-scrollbar { display: none; }
+#script-text {
+  padding: 35px 20px 60px;
+  font-family: 'Syne', sans-serif; font-size: 16px;
+  font-weight: 500; line-height: 1.6;
+  color: var(--script-text); will-change: transform;
+}
+#vol-meter-wrap {
+  position: absolute; bottom: 40px; left: 10px; right: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+#vol-bar {
+  flex: 1; height: 2px;
+  background: var(--bg-secondary);
+  border-radius: 2px; overflow: hidden; position: relative;
+}
+#vol-bar::after {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: var(--vol, 0%);
+  background: var(--vol-color, rgba(255,255,255,0.25));
+  border-radius: 2px;
+  transition: width 0.08s ease, background 0.1s ease;
+}
+#vol-label {
+  font-size: 8px; color: var(--text-muted);
+  min-width: 34px; text-align: right;
+  font-family: 'DM Mono', monospace;
+}
+#read-controls {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 36px;
+  background: var(--read-controls-bg);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 10px 4px;
+}
+.ctrl-left  { display: flex; align-items: center; gap: 8px; }
+.ctrl-right { display: flex; align-items: center; gap: 4px; }
+.mic-ring {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid #22c55e;
+  display: flex; align-items: center; justify-content: center;
+  animation: ring-pulse 2s ease-in-out infinite;
+}
+.mic-ring.paused { border-color: #f59e0b; animation: none; }
+.mic-ring.error  { border-color: #ef4444; animation: none; }
+@keyframes ring-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.15); opacity: 0.7; }
+}
+.mic-core {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: #22c55e; transition: background 0.2s;
+}
+.mic-ring.paused .mic-core { background: #f59e0b; }
+.mic-ring.error  .mic-core { background: #ef4444; }
+#status-text {
+  font-size: 9px; font-weight: 600;
+  color: var(--text-muted); letter-spacing: 0.04em;
+}
+.ctrl-btn {
+  background: var(--bg-secondary); border: none;
+  color: var(--text-secondary); border-radius: 6px;
+  width: 22px; height: 22px; font-size: 10px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s, color 0.12s;
+  font-family: inherit; flex-shrink: 0;
+}
+.ctrl-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+#speed-val {
+  font-size: 10px; font-weight: 700;
+  color: var(--text-muted);
+  min-width: 18px; text-align: center;
+}
+
+/* ── Pill buttons ─────────────────────────────────────────── */
+.pill-btn {
+  border: none; cursor: pointer; border-radius: 8px;
+  padding: 5px 12px;
+  font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: opacity 0.15s, background 0.15s;
+}
+.pill-btn.ghost {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+.pill-btn.ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
+.pill-btn.accent { background: var(--accent); color: #fff; }
+.pill-btn.accent:hover { opacity: 0.85; }
+.pill-btn.icon-btn { padding: 5px 8px; display: flex; align-items: center; justify-content: center; }
+
+/* ── Tiptap toolbar ───────────────────────────────────────── */
+.tiptap-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.tb-btn {
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.tb-btn:hover, .tb-btn.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.tb-color {
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.tb-color:hover { border-color: var(--text-secondary); transform: scale(1.2); }
+.tb-divider { width: 1px; height: 12px; background: var(--border); margin: 0 2px; }
+.tb-marker {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-family: 'DM Mono', monospace;
+  color: #facc15;
+  background: rgba(250,204,21,0.1);
+  border: 1px solid rgba(250,204,21,0.2);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.tb-marker:hover { background: rgba(250,204,21,0.2); }
+
+/* ── Tiptap editor ────────────────────────────────────────── */
+.tiptap-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.tiptap-editor {
+  outline: none;
+  padding: 4px 16px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  caret-color: var(--caret);
+  min-height: 80px;
+}
+.tiptap-editor p { margin: 0 0 2px; }
+.tiptap-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* ── Read mode markers ────────────────────────────────────── */
+.read-marker {
+  display: inline;
+  font-size: 0.7em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin: 0 3px;
+  vertical-align: middle;
+  opacity: 0.75;
+}
+.read-marker-pause   { color: #facc15; background: rgba(250,204,21,0.12); }
+.read-marker-slow    { color: #4ade80; background: rgba(74,222,128,0.12); }
+.read-marker-breathe { color: #a78bfa; background: rgba(167,139,250,0.12); }

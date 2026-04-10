@@ -163,6 +163,12 @@
 
       <div class="divider"></div>
 
+      <!-- Theme -->
+      <div class="row">
+        <span class="row-label">Light Mode</span>
+        <label class="switch"><input type="checkbox" id="theme-toggle"><span class="sw"></span></label>
+      </div>
+
       <div class="divider"></div>
 
       <!-- Microphone selector -->
@@ -305,6 +311,7 @@
 
     document.getElementById('screenshare-toggle').checked = !!c.screenshareHidden
     document.getElementById('autoscroll-toggle').checked = !c.autoScroll
+    document.getElementById('theme-toggle').checked = c.theme === 'light'
 
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === (c.mode || 'notch')))
 
@@ -343,6 +350,10 @@
 
   document.getElementById('screenshare-toggle').addEventListener('change', e => {
     API.setConfig({ screenshareHidden: e.target.checked })
+  })
+
+  document.getElementById('theme-toggle').addEventListener('change', e => {
+    API.setConfig({ theme: e.target.checked ? 'light' : 'dark' })
   })
 
   document.querySelectorAll('.mode-btn').forEach(btn => {

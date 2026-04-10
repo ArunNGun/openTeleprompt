@@ -1,6 +1,61 @@
+
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+
+// ── macOS: elevate window above menu bar/notch AND position it at screen top ─
+// Strategy: window height = notch_content_h + overlap_h (e.g. 160+40=200px)
+// Position window so its TOP is flush with screen top (above menu bar).
+// The 40px overlap at the bottom keeps WKWebView rendering (it stops
+// rendering when 100% above visible area).
+// CSS island sits at top:0 = physically in the notch.
+#[cfg(target_os = "macos")]
+fn elevate_to_notch_level(window: &WebviewWindow) {
+    use objc2_foundation::{NSRect, NSPoint, NSSize};
+    let ns_win_ptr = match window.ns_window() {
+        Ok(p) => p,
+        Err(e) => { eprintln!("[notch] ns_window error: {e}"); return; }
+    };
+    unsafe {
+        let mtm = objc2::MainThreadMarker::new_unchecked();
+        let ns_win = ns_win_ptr as *mut objc2_app_kit::NSWindow;
+
+        // Level 27 = NSMainMenuWindowLevel(24) + 3 — floats above menu bar (same as Atoll)
+        (*ns_win).setLevel(27);
+        // All spaces, stationary, ignored in cmd+tab, fullscreen safe
+        (*ns_win).setCollectionBehavior(
+            objc2_app_kit::NSWindowCollectionBehavior((1<<0)|(1<<4)|(1<<6)|(1<<8))
+        );
+        (*ns_win).setHasShadow(false);
+
+        // Reposition: flush to screen top so CSS island appears in physical notch.
+        // Use full screen width, height=200 (notch content area).
+        // y = screenFrame.maxY - windowHeight positions top of window at screen top.
+        // WKWebView renders because level=27 makes the window "visible" to compositor
+        // even when fully above the menu bar.
+        if let Some(screen) = objc2_app_kit::NSScreen::mainScreen(mtm) {
+            let sf = screen.frame(); // NSScreen uses bottom-left origin
+            let win_h = (*ns_win).frame().size.height;
+            let new_y = sf.origin.y + sf.size.height - win_h;
+            let new_frame = NSRect {
+                origin: NSPoint { x: sf.origin.x, y: new_y },
+                size: NSSize { width: sf.size.width, height: win_h },
+            };
+            (*ns_win).setFrame_display(new_frame, true);
+            eprintln!("[notch] elevated+positioned: level=27 y={new_y} (screen top at {})",
+                sf.origin.y + sf.size.height);
+        } else {
+            eprintln!("[notch] elevated: level=27 (no screen for reposition)");
+        }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn elevate_to_notch_level(_window: &WebviewWindow) {}
+
+
+
 
 use std::sync::{Mutex, atomic::{AtomicBool, Ordering}};
 
@@ -24,7 +79,7 @@ pub struct Config {
     pub opacity: f64,
     pub auto_scroll: bool,
     pub mic_device_id: String,
-
+    pub theme: String,
 }
 
 impl Default for Config {
@@ -43,6 +98,7 @@ impl Default for Config {
             opacity: 1.0,
             auto_scroll: true,         // voice input: ON by default (both platforms)
             mic_device_id: "default".to_string(),
+            theme: "dark".to_string(),
         }
     }
 }
@@ -52,6 +108,8 @@ impl Default for Config {
 pub struct Script {
     pub name: String,
     pub text: String,
+    #[serde(default)]
+    pub content: String, // Tiptap JSON string
 }
 
 // ── App state ──────────────────────────────────────────────
@@ -93,19 +151,94 @@ fn save_config(cfg: &Config) {
 }
 
 fn default_scripts() -> Vec<Script> {
+    let about_me_content = serde_json::json!({
+        "type": "doc",
+        "content": [
+            { "type": "paragraph", "content": [
+                { "type": "text", "text": "Hi, I'm " },
+                { "type": "text", "marks": [{"type": "bold"}], "text": "Arun" },
+                { "type": "text", "text": " — a full-stack engineer with " },
+                { "type": "text", "marks": [{"type": "textStyle", "attrs": {"color": "#4ade80"}}], "text": "five years of experience" },
+                { "type": "text", "text": " building products that scale." }
+            ]},
+            { "type": "paragraph", "content": [
+                { "type": "text", "text": "I've worked on systems serving " },
+                { "type": "text", "marks": [{"type": "textStyle", "attrs": {"color": "#60a5fa"}}], "text": "over thirty million customers" },
+                { "type": "text", "text": ", and I love building things that actually " },
+                { "type": "text", "marks": [{"type": "bold"}], "text": "matter to people" },
+                { "type": "text", "text": "." }
+            ]},
+            { "type": "paragraph", "content": [
+                { "type": "text", "text": "My stack spans " },
+                { "type": "text", "marks": [{"type": "textStyle", "attrs": {"color": "#4ade80"}}], "text": "React, Node.js, TypeScript" },
+                { "type": "text", "text": ", and cloud infrastructure on " },
+                { "type": "text", "marks": [{"type": "bold"}], "text": "GCP" },
+                { "type": "text", "text": ". I'm comfortable across the entire stack — from pixel-perfect frontends to distributed backend systems." }
+            ]},
+            { "type": "paragraph", "content": [
+                { "type": "text", "text": "I thrive in environments where " },
+                { "type": "text", "marks": [{"type": "textStyle", "attrs": {"color": "#facc15"}}], "text": "ownership and impact" },
+                { "type": "text", "text": " go hand in hand. I've led cross-functional features, mentored engineers, and shipped products used by real people every day." }
+            ]},
+            { "type": "paragraph", "content": [
+                { "type": "text", "text": "Outside of work, I'm into " },
+                { "type": "text", "marks": [{"type": "bold"}], "text": "game development" },
+                { "type": "text", "text": ", guitar, and building side projects that push what's possible on the web." }
+            ]}
+        ]
+    }).to_string();
+
+    let meeting_content = serde_json::json!({
+        "type": "doc",
+        "content": [
+            { "type": "paragraph", "content": [
+                { "type": "text", "text": "Quick recap from " },
+                { "type": "text", "marks": [{"type": "bold"}], "text": "yesterday's sync" },
+                { "type": "text", "text": "." }
+            ]},
+            { "type": "paragraph", "content": [
+                { "type": "text", "text": "We aligned on the " },
+                { "type": "text", "marks": [{"type": "textStyle", "attrs": {"color": "#facc15"}}], "text": "Q2 roadmap priorities" },
+                { "type": "text", "text": " — performance improvements take the lead." }
+            ]},
+            { "type": "paragraph", "content": [
+                { "type": "text", "marks": [{"type": "bold"}], "text": "Action items:" },
+                { "type": "text", "text": " design review by " },
+                { "type": "text", "marks": [{"type": "textStyle", "attrs": {"color": "#f87171"}}], "text": "Friday" },
+                { "type": "text", "text": ", API spec finalized by " },
+                { "type": "text", "marks": [{"type": "textStyle", "attrs": {"color": "#f87171"}}], "text": "end of next week" },
+                { "type": "text", "text": "." }
+            ]}
+        ]
+    }).to_string();
+
+    let demo_content = serde_json::json!({
+        "type": "doc",
+        "content": [
+            { "type": "paragraph", "content": [
+                { "type": "text", "text": "Let me walk you through what we've built." }
+            ]},
+            { "type": "paragraph", "content": [
+                { "type": "text", "marks": [{"type": "bold"}], "text": "OpenTeleprompter" },
+                { "type": "text", "text": " is a " },
+                { "type": "text", "marks": [{"type": "textStyle", "attrs": {"color": "#4ade80"}}], "text": "voice-activated teleprompter" },
+                { "type": "text", "text": " that lives right in your Mac's notch." }
+            ]},
+            { "type": "paragraph", "content": [
+                { "type": "text", "marks": [{"type": "textStyle", "attrs": {"color": "#60a5fa"}}], "text": "Speak" },
+                { "type": "text", "text": " — it scrolls. " },
+                { "type": "text", "marks": [{"type": "textStyle", "attrs": {"color": "#f87171"}}], "text": "Stop" },
+                { "type": "text", "text": " — it pauses. " },
+                { "type": "text", "marks": [{"type": "bold"}], "text": "No subscriptions, no setup" },
+                { "type": "text", "text": ", just open and go." }
+            ]}
+        ]
+    }).to_string();
+
     vec![
-        Script {
-            name: "About Me".to_string(),
-            text: "Hi, I'm Arun — a full-stack engineer with five years of experience building products that scale.\n\nI've worked on systems serving over ten million customers, and I love building things that actually matter to people.\n".to_string(),
-        },
-        Script {
-            name: "Meeting Notes".to_string(),
-            text: "Quick recap from yesterday's sync.\n\nWe aligned on the Q2 roadmap priorities — performance improvements take the lead, followed by the new onboarding flow.\n\nAction items: design review by Friday, API spec finalized by end of next week.\n".to_string(),
-        },
-        Script {
-            name: "Product Demo".to_string(),
-            text: "Let me walk you through what we've built.\n\nOpenTeleprompter is a voice-activated teleprompter that lives right in your Mac's notch.\n\nSpeak — it scrolls. Stop — it pauses. No subscriptions, no setup, just open and go.\n".to_string(),
-        },
+        Script { name: "About Me".to_string(), text: "Hi, I'm Arun.".to_string(), content: about_me_content },
+        Script { name: "Meeting Notes".to_string(), text: "Quick recap.".to_string(), content: meeting_content },
+        Script { name: "Product Demo".to_string(), text: "Let me walk you through what we've built.".to_string(), content: demo_content },
     ]
 }
 
@@ -130,6 +263,21 @@ fn apply_screenshare_mode(window: &WebviewWindow, hidden: bool) {
 
 // ── Commands ───────────────────────────────────────────────
 
+// Called from JS after window mounts — runs on Tauri's main thread dispatcher
+#[tauri::command]
+fn elevate_notch_window(window: WebviewWindow) -> String {
+    let cfg = window.app_handle()
+        .try_state::<AppState>()
+        .map(|s| s.config.lock().unwrap().mode.clone())
+        .unwrap_or_default();
+    eprintln!("[notch-cmd] called, mode={cfg}");
+    if cfg != "classic" {
+        // elevate_to_notch_level now handles both level=27 AND repositioning to screen top
+        elevate_to_notch_level(&window);
+    }
+    format!("ok:mode={cfg}")
+}
+
 #[tauri::command]
 fn get_config(state: State<AppState>) -> Config {
     state.config.lock().unwrap().clone()
@@ -145,6 +293,7 @@ fn set_config(app: AppHandle, state: State<AppState>, patch: serde_json::Value) 
     if let Some(v) = patch.get("opacity").and_then(|v| v.as_f64()) { cfg.opacity = v; }
     if let Some(v) = patch.get("autoScroll").and_then(|v| v.as_bool()) { cfg.auto_scroll = v; }
     if let Some(v) = patch.get("micDeviceId").and_then(|v| v.as_str()) { cfg.mic_device_id = v.to_string(); }
+    if let Some(v) = patch.get("theme").and_then(|v| v.as_str()) { cfg.theme = v.to_string(); }
 
     let cfg_clone = cfg.clone();
     save_config(&cfg_clone);
@@ -175,7 +324,11 @@ fn switch_mode(app: AppHandle, state: State<AppState>, mode: String) {
             if app2.get_webview_window("prompter").is_none() { break; }
         }
         std::thread::sleep(std::time::Duration::from_millis(150));
-        create_prompter_window(&app2);
+        // Window creation + NSWindow APIs MUST be on main thread (macOS Sequoia requirement)
+        let app3 = app2.clone();
+        let _ = app2.run_on_main_thread(move || {
+            create_prompter_window(&app3);
+        });
     });
 }
 
@@ -287,6 +440,13 @@ fn resize_settings(app: AppHandle, dims: serde_json::Value) -> Result<(), String
 fn quit_app(app: AppHandle) { app.exit(0); }
 
 #[tauri::command]
+fn focus_prompter(app: AppHandle) {
+    if let Some(w) = get_prompter(&app) {
+        let _ = w.set_focus();
+    }
+}
+
+#[tauri::command]
 fn open_devtools(app: AppHandle) {
     if let Some(w) = get_prompter(&app) { w.open_devtools(); }
 }
@@ -374,9 +534,15 @@ fn create_prompter_window(app: &AppHandle) {
         (0.0, 0.0)
     };
 
+    // In dev mode use Vite dev server, in release use bundled dist
+    #[cfg(debug_assertions)]
+    let prompter_url = tauri::WebviewUrl::External("http://localhost:1420".parse().unwrap());
+    #[cfg(not(debug_assertions))]
+    let prompter_url = tauri::WebviewUrl::App("index.html".into());
+
     let window = tauri::WebviewWindowBuilder::new(
         app, "prompter",
-        tauri::WebviewUrl::App("renderer/index.html".into()),
+        prompter_url,
     )
     .title("Teleprompter")
     .decorations(false)
@@ -384,6 +550,7 @@ fn create_prompter_window(app: &AppHandle) {
     .always_on_top(true)
     .skip_taskbar(true)
     .resizable(cfg.mode == "classic")
+    .accept_first_mouse(true)
     .inner_size(width, height)
     .position(x, y)
     .visible_on_all_workspaces(true)
@@ -395,8 +562,19 @@ fn create_prompter_window(app: &AppHandle) {
         Err(e) => { eprintln!("Failed to create prompter window: {e}"); return; }
     };
 
-    window.set_ignore_cursor_events(true).ok(); // passthrough by default for notch
+    // NOTE: do NOT set_ignore_cursor_events here — breaks WKWebView rendering
+    // JS side calls API.setIgnoreMouse after React mounts
     apply_screenshare_mode(&window, cfg.screenshare_hidden);
+
+    // Elevate window level above menu bar (NSWindow APIs — must be on main thread).
+    // switch_mode now dispatches create_prompter_window to main thread, so this is safe.
+    eprintln!("[OT] is_notch={is_notch}, mode={}", cfg.mode);
+    if is_notch {
+        eprintln!("[OT] calling elevate_to_notch_level");
+        elevate_to_notch_level(&window);
+    }
+
+
 }
 
 fn position_settings_window(app: &AppHandle, w: &WebviewWindow) {
@@ -424,7 +602,7 @@ fn show_settings(app: &AppHandle) {
     #[cfg(target_os = "windows")]
     let (settings_url, win_w, win_h) = ("renderer/settings-win.html", 220.0_f64, 500.0_f64);
     #[cfg(not(target_os = "windows"))]
-    let (settings_url, win_w, win_h) = ("renderer/settings.html", 280.0_f64, 380.0_f64);
+    let (settings_url, win_w, win_h) = ("settings.html", 280.0_f64, 420.0_f64);
 
     if let Some(w) = get_settings(app) {
         position_settings_window(app, &w);
@@ -466,6 +644,7 @@ fn toggle_settings(app: &AppHandle) {
 // ── Run ────────────────────────────────────────────────────
 
 pub fn run() {
+    eprintln!("[OT] starting up");
     let config = load_config();
     let state  = AppState {
         config:      Mutex::new(config),
@@ -487,7 +666,7 @@ pub fn run() {
             hide_settings, start_drag,
             set_movable, move_window, get_window_pos,
             close_welcome, open_url, open_settings,
-
+            focus_prompter, elevate_notch_window,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
@@ -506,9 +685,14 @@ pub fn run() {
             let x: f64 = if is_notch { 0.0 } else { (screen_w - width) / 2.0 };
             let y: f64 = if is_notch { 0.0 } else { 100.0 };
 
+            #[cfg(debug_assertions)]
+            let prompter_url = tauri::WebviewUrl::External("http://localhost:1420".parse().unwrap());
+            #[cfg(not(debug_assertions))]
+            let prompter_url = tauri::WebviewUrl::App("renderer/index.html".into());
+
             let prompter = tauri::WebviewWindowBuilder::new(
                 app, "prompter",
-                tauri::WebviewUrl::App("renderer/index.html".into()),
+                prompter_url,
             )
             .title("Teleprompter")
             .decorations(false)
@@ -516,15 +700,18 @@ pub fn run() {
             .always_on_top(true)
             .skip_taskbar(true)
             .resizable(cfg.mode == "classic")
+            .accept_first_mouse(true)
             .inner_size(width, height)
             .position(x, y)
             .visible_on_all_workspaces(true)
             .content_protected(false)
             .build()?;
 
-            // Only enable mouse passthrough in notch mode — in classic mode the window must be interactive
+            eprintln!("[OT] setup: prompter window built, is_notch={is_notch}");
+
+            // Elevate above menu bar in notch mode (must be on main thread)
             if is_notch {
-                prompter.set_ignore_cursor_events(true).ok();
+                elevate_to_notch_level(&prompter);
             }
 
             if cfg.screenshare_hidden {

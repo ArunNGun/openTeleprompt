@@ -4,7 +4,10 @@
   "version": "2.2.1",
   "identifier": "com.openteleprompter.teleprompter",
   "build": {
-    "frontendDist": "../frontend"
+    "beforeDevCommand": "npm run dev:react",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build:frontend",
+    "frontendDist": "../dist"
   },
   "app": {
     "withGlobalTauri": true,

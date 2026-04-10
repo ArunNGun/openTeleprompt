@@ -18,6 +18,11 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = ["tray-icon", "macos-private-api", "devtools", "image-png"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", features = ["NSWindow", "NSPanel", "NSScreen", "NSRunningApplication", "NSApplication"] }
+objc2-foundation = { version = "0.3", features = ["NSString", "NSGeometry"] }
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-positioner = { version = "2", features = ["tray-icon"] }
@@ -25,8 +30,6 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 dirs = "5"
 open = "5"
-
-[target.'cfg(target_os = "macos")'.dependencies]
 
 [profile.release]
 panic = "abort"
