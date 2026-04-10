@@ -169,30 +169,55 @@ body.mode-classic, body.mode-classic #root {
 /* ── Classic mode (floating pill, normal window level) ─────── */
 body.mode-classic #island {
   position: fixed;
-  top: 8px; left: 8px;
+  top: 0;
+  left: 0;
+  transform: none;                    /* override notch translateX(-50%) */
   width: 180px;
   height: 36px;
   border-radius: 18px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-  transform: none;
+  /* No inset border — clean drop shadow only */
+  box-shadow: 0 0px 0px rgba(0, 0, 0, 0.089), 0 0px 0px rgba(0, 0, 0, 0.433);
   transition:
     width         0.4s cubic-bezier(0.32, 0.72, 0, 1),
     height        0.4s cubic-bezier(0.32, 0.72, 0, 1),
-    border-radius 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    border-radius 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow    0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 body.mode-classic #island:not(.state-edit):not(.state-read):hover {
-  width: 180px; height: 36px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  width: 180px;
+  height: 36px;
+  border-radius: 18px;
 }
 body.mode-classic #island.state-edit {
+  top: 0;
+  left: 0;
+  transform: none;
   width: 540px;
   height: 320px;
-  border-radius: 14px;
+  border-radius: 16px;
+  /* box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 2px 12px rgba(0,0,0,0.4); */
 }
 body.mode-classic #island.state-read {
+  top: 0;
+  left: 0;
+  transform: none;
   width: 420px;
   height: 200px;
-  border-radius: 14px;
+  border-radius: 16px;
+  /* box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 2px 12px rgba(0,0,0,0.4); */
+}
+/* Hide notch corners in classic mode — they only make sense for notch */
+body.mode-classic .notch-corner {
+  display: none;
+}
+/* Classic idle: always show label + chevron (no hover needed) */
+body.mode-classic .idle-pill-label {
+  color: var(--text-secondary);
+  max-width: 80px;
+}
+body.mode-classic .idle-chevron {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ── Views ────────────────────────────────────────────────── */
@@ -598,3 +623,51 @@ body.mode-classic #island.state-read {
 .read-marker-pause   { color: #facc15; background: rgba(250,204,21,0.12); }
 .read-marker-slow    { color: #4ade80; background: rgba(74,222,128,0.12); }
 .read-marker-breathe { color: #a78bfa; background: rgba(167,139,250,0.12); }
+
+/* ── Dev Panel (browser only, never shown in Tauri) ─────── */
+#dev-panel {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(15,15,20,0.92);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+  z-index: 99999;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.7);
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+  pointer-events: all;
+}
+.dev-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #818cf8;
+  margin-bottom: 2px;
+}
+.dev-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dev-row select {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 5px;
+  color: rgba(255,255,255,0.85);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 2px 6px;
+  cursor: pointer;
+  outline: none;
+}
+.dev-row select:hover {
+  border-color: rgba(129,140,248,0.5);
+}

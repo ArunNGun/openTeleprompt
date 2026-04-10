@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TextStyle } from '@tiptap/extension-text-style'
@@ -13,8 +13,15 @@ const COLORS = [
   { label: 'Blue',   value: '#60a5fa' },
   { label: 'Red',    value: '#f87171' },
 ]
-
 const MARKERS = ['[PAUSE]', '[SLOW]', '[BREATHE]']
+
+function computeStats(text) {
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0
+  if (!words) return ''
+  const secs = Math.round((words / 130) * 60)
+  const timeStr = secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}m ${secs % 60}s`
+  return `${words} words · ~${timeStr} at 130 WPM`
+}
 
 export default function EditView() {
   const {
@@ -23,9 +30,7 @@ export default function EditView() {
     setScriptText, setScriptDoc, config,
   } = useAppStore()
 
-
-  const isNotch = config?.mode !== 'classic'
-
+  const isClassic = config?.mode === 'classic'
   const [stats, setStats] = useState('')
 
   const editor = useEditor({
@@ -35,47 +40,26 @@ export default function EditView() {
       attributes: { class: 'tiptap-editor', spellcheck: 'true' },
     },
     onUpdate({ editor }) {
-      const text = editor.getText()
-      const words = text.trim() ? text.trim().split(/\s+/).length : 0
-      if (!words) { setStats(''); return }
-      const secs = Math.round((words / 130) * 60)
-      const timeStr = secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}m ${secs % 60}s`
-      setStats(`${words} words · ~${timeStr} at 130 WPM`)
+      setStats(computeStats(editor.getText()))
     },
   })
 
-  // Recompute stats from editor text
-  function updateStats(text) {
-    const words = text.trim() ? text.trim().split(/\s+/).length : 0
-    if (!words) { setStats(''); return }
-    const secs = Math.round((words / 130) * 60)
-    const timeStr = secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}m ${secs % 60}s`
-    setStats(`${words} words · ~${timeStr} at 130 WPM`)
-  }
-
-  // Load first script when editor is ready
+  // Load script when editor is ready
   useEffect(() => {
     if (!editor) return
     const script = scripts[currentScriptIndex]
-    if (script) {
-      try {
-        editor.commands.setContent(JSON.parse(script.content))
-      } catch {
-        editor.commands.setContent(`<p>${script.text || ''}</p>`)
-      }
-      updateStats(script.text || '')
+    if (!script) return
+    try {
+      editor.commands.setContent(JSON.parse(script.content))
+    } catch {
+      editor.commands.setContent(`<p>${script.text || ''}</p>`)
     }
-  }, [editor]) // only on editor init
+    setStats(computeStats(script.text || ''))
+  }, [editor])
 
-  function getPlainText() {
-    return editor?.getText() || ''
-  }
-
-
-
-  function saveCurrentScript() {
+  const saveCurrentScript = useCallback(() => {
     if (!editor) return
-    const text = getPlainText().trim()
+    const text = editor.getText().trim()
     if (!text) return
     const name = text.split('\n')[0].substring(0, 40) || 'Untitled'
     const content = JSON.stringify(editor.getJSON())
@@ -88,21 +72,19 @@ export default function EditView() {
     }
     setScripts(updated)
     API.saveScripts(updated)
-  }
+  }, [editor, scripts, currentScriptIndex])
 
   function handleStart() {
     if (!editor) return
-    const text = getPlainText().trim()
+    const text = editor.getText().trim()
     if (!text) return
     saveCurrentScript()
     setScriptText(text)
     setScriptDoc(editor.getJSON())
-    if (!isNotch) API.resizePrompter({ width: 420, height: 200 })
     setView('read')
   }
 
   function handleCollapse() {
-    if (!isNotch) API.resizePrompter({ width: 200, height: 36 })
     API.setIgnoreMouse(false)
     setView('idle')
   }
@@ -124,7 +106,7 @@ export default function EditView() {
     } catch {
       editor.commands.setContent(`<p>${script.text || ''}</p>`)
     }
-    updateStats(script.text || '')
+    setStats(computeStats(script.text || ''))
     editor.commands.focus()
   }
 
@@ -133,7 +115,7 @@ export default function EditView() {
     const updated = scripts.filter((_, idx) => idx !== i)
     setScripts(updated)
     API.saveScripts(updated)
-    if (currentScriptIndex >= i) setCurrentScriptIndex(currentScriptIndex - 1)
+    if (currentScriptIndex >= i) setCurrentScriptIndex(Math.max(-1, currentScriptIndex - 1))
   }
 
   function insertMarker(marker) {
@@ -142,10 +124,6 @@ export default function EditView() {
 
   function setColor(color) {
     editor?.chain().focus().setColor(color).run()
-  }
-
-  function clearColor() {
-    editor?.chain().focus().unsetColor().run()
   }
 
   return (
@@ -173,7 +151,6 @@ export default function EditView() {
 
       {/* Toolbar */}
       <div className="tiptap-toolbar">
-        {/* Bold */}
         <button
           className={`tb-btn${editor?.isActive('bold') ? ' active' : ''}`}
           onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBold().run() }}
@@ -182,7 +159,6 @@ export default function EditView() {
 
         <div className="tb-divider" />
 
-        {/* Colors */}
         {COLORS.map((c) => (
           <button
             key={c.value}
@@ -192,11 +168,14 @@ export default function EditView() {
             title={c.label}
           />
         ))}
-        <button className="tb-btn" onMouseDown={(e) => { e.preventDefault(); clearColor() }} title="Clear color">✕</button>
+        <button
+          className="tb-btn"
+          onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().unsetColor().run() }}
+          title="Clear color"
+        >✕</button>
 
         <div className="tb-divider" />
 
-        {/* Cue markers */}
         {MARKERS.map((m) => (
           <button
             key={m}
@@ -207,7 +186,7 @@ export default function EditView() {
         ))}
       </div>
 
-      {/* Tiptap editor */}
+      {/* Editor */}
       <div className="tiptap-wrap">
         <EditorContent editor={editor} />
       </div>

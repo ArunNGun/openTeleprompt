@@ -37,7 +37,4 @@ export const useAppStore = create((set, get) => ({
 
   speedIndex: 3,
   setSpeedIndex: (i) => set({ speedIndex: i }),
-
-  fontSize: 16,
-  setFontSize: (size) => set({ fontSize: Math.max(11, Math.min(32, size)) }),
 }))

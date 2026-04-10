@@ -147,7 +147,8 @@ export default function ReadView() {
     micEngineRef.current = engine
     engine.start(configRef.current.micDeviceId)
 
-    // Shortcuts
+    // Shortcuts — capture unlisten fn for cleanup
+    let unlistenShortcut
     API.onShortcut((action) => {
       if (action === 'pause') togglePause()
       if (action === 'faster') setSpeedIdx(i => Math.min(SPEEDS.length - 1, i + 1))
@@ -157,12 +158,13 @@ export default function ReadView() {
         if (scriptTextRef.current) scriptTextRef.current.style.transform = 'translateY(0px)'
       }
       if (action === 'stop') handleDone()
-    })
+    }).then(fn => { unlistenShortcut = fn })
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       if (silenceTimer.current) clearTimeout(silenceTimer.current)
       micEngineRef.current?.stop()
+      unlistenShortcut?.()
     }
   }, [])
 
@@ -179,8 +181,7 @@ export default function ReadView() {
     if (silenceTimer.current) clearTimeout(silenceTimer.current)
     micEngineRef.current?.stop()
     API.setIgnoreMouse(false)
-    if (config?.mode === 'classic') API.resizePrompter({ width: 200, height: 36 })
-    setView('idle')
+    setView('idle') // App.jsx resize effect handles window resize on view change
   }
 
   function handleReset() {

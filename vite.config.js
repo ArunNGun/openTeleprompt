@@ -15,6 +15,12 @@ export default defineConfig({
         main: 'index.html',
         settings: 'settings.html',
       },
+      output: {
+        manualChunks(id) {
+          if (id.includes('@tiptap') || id.includes('prosemirror')) return 'tiptap'
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) return 'react'
+        },
+      },
     },
   },
 })

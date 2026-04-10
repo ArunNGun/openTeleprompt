@@ -10,620 +10,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg: #080809;
-      --bg2: #0c0c10;
-      --surface: #13131a;
-      --border: rgba(255,255,255,0.06);
-      --border2: rgba(255,255,255,0.1);
-      --text: rgba(255,255,255,0.95);
-      --muted: rgba(255,255,255,0.4);
-      --dim: rgba(255,255,255,0.18);
-      --accent: #818cf8;
-      --accent2: #6366f1;
-      --accent-dim: rgba(129,140,248,0.12);
-      --green: #22c55e;
-      --green-dim: rgba(34,197,94,0.12);
-    }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Syne', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
-    }
-
-    /* ── FAKE MENUBAR ── */
-    .menubar {
-      position: relative; top: 0; left: 0; right: 0; z-index: 300;
-      height: 28px;
-      background: rgba(8,8,9,0.92);
-      backdrop-filter: blur(20px);
-      display: flex; align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      font-family: -apple-system, 'SF Pro Text', sans-serif;
-    }
-    .menubar-left, .menubar-right {
-      display: flex; align-items: center; gap: 16px; flex: 1;
-    }
-    .menubar-right { justify-content: flex-end; }
-    .menubar-apple { font-size: 14px; color: rgba(255,255,255,0.8); }
-    .menubar-item { font-size: 13px; color: rgba(255,255,255,0.7); cursor: default; white-space: nowrap; }
-    .menubar-icon { font-size: 12px; color: rgba(255,255,255,0.5); }
-    .menubar-time { font-size: 12px; color: rgba(255,255,255,0.6); font-variant-numeric: tabular-nums; white-space: nowrap; }
-
-    /* ── APP ISLAND ── */
-    .app-island {
-      position: absolute;
-      top: 0; left: 50%; transform: translateX(-50%);
-      width: 380px;
-      background: #0d0d12;
-      border-radius: 0 0 20px 20px;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-top: none;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.8);
-      overflow: hidden;
-      cursor: default;
-      transition: width 0.4s cubic-bezier(0.34,1.4,0.64,1);
-      z-index: 10;
-    }
-    .app-island:hover .app-scroll-track { animation-play-state: paused; }
-    .app-island:hover .app-mic-ring { border-color: #f59e0b; animation: none; }
-    .app-island:hover .app-mic-core { background: #f59e0b; }
-    .app-island:hover .app-vol-fill { animation-play-state: paused; background: #f59e0b; }
-    .app-island:hover .app-mic-label::after { content: ''; }
-    .app-island:hover .app-mic-label { color: rgba(255,255,255,0.4); }
-
-    .app-scroll-mask {
-      height: 110px; overflow: hidden;
-      position: relative;
-      mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
-    }
-    .app-scroll-track {
-      animation: appScroll 18s linear infinite;
-    }
-    .app-scroll-track p {
-      font-family: 'Syne', sans-serif;
-      font-size: 15px; font-weight: 600;
-      line-height: 1.6; color: rgba(255,255,255,0.9);
-      padding: 12px 18px;
-    }
-    @keyframes appScroll {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-50%); }
-    }
-
-    .app-vol-row {
-      display: flex; align-items: center; gap: 8px;
-      padding: 4px 12px 2px;
-    }
-    .app-vol-bar {
-      flex: 1; height: 2px; background: rgba(255,255,255,0.08);
-      border-radius: 1px; overflow: hidden;
-    }
-    .app-vol-fill {
-      height: 100%; background: #22c55e; border-radius: 1px;
-      animation: volAnim 2s ease-in-out infinite;
-    }
-    @keyframes volAnim {
-      0%,100% { width: 45%; } 25% { width: 70%; } 50% { width: 55%; } 75% { width: 80%; }
-    }
-    .app-db {
-      font-family: 'DM Mono', monospace; font-size: 9px;
-      color: rgba(255,255,255,0.25); white-space: nowrap;
-    }
-
-    .app-controls {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 10px 10px;
-    }
-    .app-ctrl-left { display: flex; align-items: center; gap: 6px; }
-    .app-ctrl-right { display: flex; align-items: center; gap: 3px; }
-    .app-mic-ring {
-      width: 16px; height: 16px; border-radius: 50%;
-      border: 1.5px solid #22c55e;
-      display: flex; align-items: center; justify-content: center;
-      animation: ringPulse 2s ease-in-out infinite;
-    }
-    .app-mic-core { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; }
-    .app-mic-label { font-size: 10px; font-family: 'DM Mono', monospace; color: rgba(255,255,255,0.3); }
-    .app-speed { font-size: 10px; font-family: 'DM Mono', monospace; color: rgba(255,255,255,0.35); padding: 0 2px; }
-    .app-btn {
-      background: rgba(255,255,255,0.07); border: none;
-      color: rgba(255,255,255,0.5); border-radius: 6px;
-      width: 24px; height: 24px; font-size: 10px;
-      cursor: pointer; font-family: 'Syne', sans-serif;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s, color 0.15s;
-    }
-    .app-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
-
-    /* Push nav + hero down to account for menubar */
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: rgba(129,140,248,0.3); border-radius: 2px; }
-
-
-
-    /* ── HERO ── */
-    .hero {
-      min-height: 100vh;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      text-align: center;
-      padding: 80px 24px 100px;
-      margin-top: 100px;
-      position: relative; overflow: hidden;
-    }
-
-    /* Dot grid */
-    .hero::before {
-      content: '';
-      position: absolute; inset: 0;
-      background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
-      background-size: 32px 32px;
-      mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
-      pointer-events: none;
-    }
-
-    /* Glow orbs */
-    .orb {
-      position: absolute; border-radius: 50%; pointer-events: none;
-      filter: blur(80px); opacity: 0.5;
-    }
-    .orb-1 { width: 600px; height: 600px; background: rgba(99,102,241,0.2); top: -200px; left: 50%; transform: translateX(-50%); }
-    .orb-2 { width: 300px; height: 300px; background: rgba(34,197,94,0.08); top: 60%; right: -100px; }
-    .orb-3 { width: 300px; height: 300px; background: rgba(129,140,248,0.1); top: 40%; left: -100px; }
-
-    .hero-badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(129,140,248,0.08);
-      border: 1px solid rgba(129,140,248,0.2);
-      border-radius: 100px; padding: 6px 16px;
-      font-size: 11px; font-weight: 700; color: var(--accent);
-      letter-spacing: 0.08em; text-transform: uppercase;
-      margin-bottom: 40px;
-      opacity: 0; transform: translateY(16px);
-      animation: fadeUp 0.6s ease forwards 0.1s;
-    }
-    .badge-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--green);
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    .hero h1 {
-      font-size: clamp(52px, 8vw, 108px);
-      font-weight: 800; letter-spacing: -0.04em; line-height: 0.95;
-      max-width: 1000px; margin-bottom: 28px;
-      opacity: 0; transform: translateY(24px);
-      animation: fadeUp 0.7s ease forwards 0.2s;
-    }
-    .hero h1 em {
-      font-style: normal;
-      background: linear-gradient(135deg, #c7d2fe 0%, #818cf8 50%, #6366f1 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-
-    .hero-sub {
-      font-size: clamp(15px, 2vw, 19px); color: var(--muted);
-      max-width: 500px; line-height: 1.75; margin-bottom: 52px;
-      font-weight: 400;
-      opacity: 0; transform: translateY(20px);
-      animation: fadeUp 0.7s ease forwards 0.35s;
-    }
-
-    .hero-actions {
-      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
-      margin-bottom: 100px;
-      opacity: 0; transform: translateY(20px);
-      animation: fadeUp 0.7s ease forwards 0.5s;
-    }
-    .btn-primary {
-      background: var(--accent); color: #fff;
-      padding: 15px 32px; border-radius: 10px;
-      font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
-      text-decoration: none; transition: opacity 0.2s, transform 0.15s;
-      display: inline-flex; align-items: center; gap: 8px;
-    }
-    .btn-primary:hover { opacity: 0.85; transform: translateY(-2px); }
-    .btn-ghost {
-      background: transparent; color: var(--muted);
-      padding: 15px 32px; border-radius: 10px;
-      font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 600;
-      text-decoration: none; border: 1px solid var(--border2);
-      transition: color 0.2s, border-color 0.2s, transform 0.15s;
-    }
-    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.25); transform: translateY(-2px); }
-
-    /* ── MOCKUP ── */
-    .mockup-wrap {
-      width: 100%; max-width: 800px; position: relative;
-      opacity: 0; transform: translateY(32px) scale(0.97);
-      animation: fadeUpScale 0.8s ease forwards 0.65s;
-    }
-    .mockup-glow {
-      position: absolute; bottom: -60px; left: 50%; transform: translateX(-50%);
-      width: 70%; height: 100px;
-      background: radial-gradient(ellipse, rgba(99,102,241,0.3) 0%, transparent 70%);
-      filter: blur(20px); pointer-events: none;
-    }
-    .mockup {
-      background: #0a0a0e;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 40px 120px rgba(0,0,0,0.8);
-    }
-    .mockup-titlebar {
-      background: #111118; height: 40px;
-      display: flex; align-items: center; padding: 0 16px; gap: 8px;
-      border-bottom: 1px solid var(--border);
-    }
-    .tbar-dot { width: 10px; height: 10px; border-radius: 50%; }
-    .tbar-dot:nth-child(1) { background: #ff5f57; }
-    .tbar-dot:nth-child(2) { background: #ffbd2e; }
-    .tbar-dot:nth-child(3) { background: #28c840; }
-    .tbar-spacer { flex: 1; }
-    .tbar-pill {
-      width: 90px; height: 22px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 11px;
-      display: flex; align-items: center; justify-content: center; gap: 5px;
-      box-shadow: 0 2px 12px rgba(99,102,241,0.5);
-    }
-    .tbar-dot-green {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--green);
-      box-shadow: 0 0 6px var(--green);
-      animation: pulse 2s ease-in-out infinite;
-    }
-    .tbar-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.9); font-family: 'Syne', sans-serif; }
-
-    .mockup-body { padding: 36px 48px 0; overflow: hidden; height: 220px; position: relative; }
-    .mockup-body::after {
-      content: '';
-      position: absolute; bottom: 0; left: 0; right: 0; height: 60px;
-      background: linear-gradient(to top, #0a0a0e, transparent);
-      pointer-events: none;
-    }
-    .scroll-track { animation: scrollUp 8s linear infinite; }
-    .s-line {
-      height: 11px; border-radius: 6px; margin-bottom: 16px;
-      background: rgba(255,255,255,0.85);
-    }
-    .s-line:nth-child(2) { width: 82%; background: rgba(255,255,255,0.6); }
-    .s-line:nth-child(3) { width: 91%; background: rgba(255,255,255,0.45); }
-    .s-line:nth-child(4) { width: 70%; background: rgba(255,255,255,0.3); }
-    .s-line:nth-child(5) { width: 86%; background: rgba(255,255,255,0.2); }
-    .s-line:nth-child(6) { width: 75%; background: rgba(255,255,255,0.12); }
-    .s-line:nth-child(7) { background: rgba(255,255,255,0.07); }
-    .s-line:nth-child(8) { width: 80%; background: rgba(255,255,255,0.04); }
-
-    @keyframes scrollUp {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-50%); }
-    }
-
-    .mockup-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 20px;
-      background: rgba(8,8,9,0.98);
-      border-top: 1px solid var(--border);
-    }
-    .mic-status { display: flex; align-items: center; gap: 8px; }
-    .mic-ring {
-      width: 18px; height: 18px; border-radius: 50%;
-      border: 1.5px solid var(--green);
-      display: flex; align-items: center; justify-content: center;
-      animation: ringPulse 2s ease-in-out infinite;
-    }
-    .mic-core { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
-    .mic-text { font-size: 10px; font-family: 'DM Mono', monospace; color: rgba(255,255,255,0.3); }
-    .wave { display: flex; align-items: center; gap: 3px; }
-    .wb {
-      width: 3px; border-radius: 2px; background: var(--accent);
-      animation: waveAnim 1.2s ease-in-out infinite;
-    }
-    .wb:nth-child(1) { height: 6px; }
-    .wb:nth-child(2) { height: 12px; animation-delay: 0.1s; }
-    .wb:nth-child(3) { height: 18px; animation-delay: 0.2s; }
-    .wb:nth-child(4) { height: 22px; animation-delay: 0.15s; }
-    .wb:nth-child(5) { height: 18px; animation-delay: 0.25s; }
-    .wb:nth-child(6) { height: 12px; animation-delay: 0.1s; }
-    .wb:nth-child(7) { height: 6px; animation-delay: 0.05s; }
-
-    /* ── KEYFRAMES ── */
-    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeUpScale { to { opacity: 1; transform: translateY(0) scale(1); } }
-    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.75)} }
-    @keyframes ringPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.25);opacity:0.6} }
-    @keyframes waveAnim { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(0.3)} }
-
-    /* ── SECTIONS ── */
-    section { padding: 140px 24px; }
-    .container { max-width: 1100px; margin: 0 auto; }
-    .section-tag {
-      font-size: 11px; font-weight: 700; color: var(--accent);
-      letter-spacing: 0.12em; text-transform: uppercase;
-      margin-bottom: 20px; display: block;
-    }
-    .section-h {
-      font-size: clamp(36px, 4.5vw, 60px);
-      font-weight: 800; letter-spacing: -0.03em; line-height: 1.05;
-      margin-bottom: 20px;
-    }
-    .section-p { font-size: 17px; color: var(--muted); line-height: 1.75; max-width: 460px; }
-
-    /* Reveal animation */
-    .reveal {
-      opacity: 0; transform: translateY(28px);
-      transition: opacity 0.65s ease, transform 0.65s ease;
-    }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-
-    /* ── HOW IT WORKS ── */
-    .how-grid {
-      display: grid; grid-template-columns: 1fr 1fr 1fr;
-      gap: 1px; background: var(--border);
-      border-radius: 24px; overflow: hidden;
-      margin-top: 72px;
-    }
-    .how-card {
-      background: var(--bg2); padding: 52px 44px;
-      position: relative; overflow: hidden;
-    }
-    .how-card::before {
-      content: attr(data-num);
-      position: absolute; top: -20px; right: 20px;
-      font-size: 120px; font-weight: 800;
-      color: rgba(255,255,255,0.02);
-      line-height: 1; pointer-events: none;
-      font-family: 'Syne', sans-serif;
-    }
-    .how-num {
-      font-family: 'DM Mono', monospace; font-size: 11px;
-      color: var(--accent); letter-spacing: 0.1em; margin-bottom: 28px;
-    }
-    .how-icon {
-      width: 52px; height: 52px; border-radius: 14px;
-      background: var(--accent-dim);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 24px; margin-bottom: 24px;
-    }
-    .how-card h3 { font-size: 22px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.01em; }
-    .how-card p { font-size: 14px; color: var(--muted); line-height: 1.75; }
-
-    /* ── NOTCH SECTION ── */
-    .notch-section {
-      background: var(--bg2);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-    .notch-inner {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 100px; align-items: center;
-      max-width: 1100px; margin: 0 auto;
-    }
-    .notch-demo-wrap { position: relative; }
-    .notch-demo {
-      background: #0a0a0e;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 24px; overflow: hidden;
-      box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03);
-    }
-    .notch-bar {
-      background: #111118; height: 44px;
-      display: flex; align-items: flex-end; justify-content: center;
-      border-bottom: 1px solid var(--border); padding-bottom: 0;
-      position: relative;
-    }
-    .notch-pill {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      width: 110px; height: 30px; border-radius: 0 0 18px 18px;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      box-shadow: 0 4px 24px rgba(99,102,241,0.5);
-    }
-    .notch-pill-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); animation: pulse 2s ease-in-out infinite; }
-    .notch-content { padding: 32px 32px 28px; overflow: hidden; }
-    .notch-scroll { animation: scrollUp 10s linear infinite; }
-    .n-line { height: 10px; border-radius: 5px; margin-bottom: 14px; }
-    .notch-bar-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px;
-      border-top: 1px solid var(--border);
-      background: rgba(8,8,9,0.98);
-    }
-
-    /* ── FEATURES ── */
-    .features-layout {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      grid-template-rows: auto;
-      gap: 1px; background: var(--border);
-      border-radius: 24px; overflow: hidden;
-      margin-top: 72px;
-    }
-    .feat {
-      background: var(--bg2); padding: 40px;
-      transition: background 0.25s;
-    }
-    .feat:hover { background: var(--surface); }
-    .feat.wide { grid-column: span 3; }
-    .feat.wider { grid-column: span 4; }
-    .feat.narrow { grid-column: span 2; }
-    .feat-icon { font-size: 32px; margin-bottom: 20px; display: block; }
-    .feat h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.01em; }
-    .feat p { font-size: 13px; color: var(--muted); line-height: 1.7; }
-
-    /* Feature mini demos */
-    .mini-wave { display: flex; align-items: flex-end; gap: 4px; height: 32px; margin-top: 20px; }
-    .mw { width: 4px; border-radius: 2px; background: var(--accent); animation: waveAnim 1.2s ease-in-out infinite; }
-
-    .opacity-demo { margin-top: 20px; position: relative; }
-    .opacity-bar {
-      height: 8px; border-radius: 4px;
-      background: linear-gradient(to right, rgba(129,140,248,0.1), rgba(129,140,248,0.9));
-    }
-    .opacity-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); position: absolute; top: -3px; animation: thumbSlide 3s ease-in-out infinite; }
-    @keyframes thumbSlide { 0%,100%{left:20%} 50%{left:70%} }
-
-    .speed-demo { display: flex; align-items: center; gap: 8px; margin-top: 20px; }
-    .spd-btn { width: 24px; height: 24px; border-radius: 6px; background: var(--accent-dim); border: 1px solid rgba(129,140,248,0.2); display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--accent); }
-    .spd-val { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text); }
-
-    /* ── FAQ ── */
-    .faq-wrap { margin-top: 64px; display: flex; flex-direction: column; gap: 1px; background: var(--border); border-radius: 20px; overflow: hidden; }
-    .faq-item { background: var(--bg2); }
-    .faq-q {
-      width: 100%; padding: 24px 28px; text-align: left;
-      background: none; border: none; color: var(--text);
-      font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 600;
-      display: flex; justify-content: space-between; align-items: center; gap: 16px;
-      cursor: pointer; transition: background 0.2s;
-    }
-    .faq-q:hover { background: var(--surface); }
-    .faq-arrow { color: var(--muted); transition: transform 0.3s ease; flex-shrink: 0; font-size: 18px; }
-    .faq-a {
-      display: grid; grid-template-rows: 0fr;
-      transition: grid-template-rows 0.35s ease;
-    }
-    .faq-inner { overflow: hidden; }
-    .faq-inner p { padding: 0 28px 24px; font-size: 14px; color: var(--muted); line-height: 1.8; }
-    .faq-item.open .faq-a { grid-template-rows: 1fr; }
-    .faq-item.open .faq-arrow { transform: rotate(180deg); color: var(--accent); }
-
-    /* ── CTA ── */
-    .cta {
-      text-align: center; padding: 160px 24px;
-      position: relative; overflow: hidden;
-    }
-    .cta-orb {
-      position: absolute; width: 700px; height: 700px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 65%);
-      top: 50%; left: 50%; transform: translate(-50%, -50%);
-      pointer-events: none; filter: blur(20px);
-    }
-    .cta h2 {
-      font-size: clamp(40px, 6vw, 80px);
-      font-weight: 800; letter-spacing: -0.03em; line-height: 1.05;
-      margin-bottom: 20px;
-    }
-    .cta p { font-size: 18px; color: var(--muted); margin-bottom: 56px; }
-    .download-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px; }
-    .dl-btn {
-      display: flex; flex-direction: column; align-items: flex-start;
-      padding: 20px 28px; min-width: 220px;
-      background: var(--surface); border: 1px solid var(--border2);
-      border-radius: 14px; text-decoration: none;
-      transition: border-color 0.25s, background 0.25s, transform 0.2s;
-    }
-    .dl-btn:hover { border-color: var(--accent); background: var(--accent-dim); transform: translateY(-3px); }
-    .dl-tag { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 6px; }
-    .dl-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
-    .dl-sub { font-size: 11px; color: var(--dim); }
-    .cta-note { font-size: 12px; color: var(--dim); }
-
-    /* ── INSTALL STEPS ── */
-    .install-steps {
-      max-width: 520px; margin: 0 auto;
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: 14px;
-      padding: 24px 28px;
-      text-align: left;
-    }
-    .install-grid { display: flex; flex-direction: column; gap: 12px; }
-    .install-step {
-      display: flex; align-items: flex-start; gap: 14px;
-    }
-    .install-num {
-      width: 24px; height: 24px; border-radius: 50%;
-      background: var(--accent-dim); border: 1px solid rgba(129,140,248,0.3);
-      color: var(--accent); font-size: 12px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; margin-top: 1px;
-    }
-    .install-text { font-size: 13px; color: var(--muted); line-height: 1.6; }
-    .install-text strong { color: var(--text); font-weight: 600; }
-
-    /* ── FOOTER ── */
-    .footer-wrap {
-      border-top: 1px solid var(--border);
-      padding: 40px 48px;
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 16px;
-    }
-    .footer-wrap p { font-size: 13px; color: var(--dim); }
-    .footer-links { display: flex; gap: 28px; }
-    .footer-links a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.2s; }
-    .footer-links a:hover { color: var(--text); }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 900px) {
-      /* Menubar */
-      .menubar { padding: 0 12px; }
-      .menubar-item { display: none; }
-      .app-island { width: 260px; }
-      .app-island:hover { width: 260px; }
-      .app-scroll-mask { height: 90px; }
-      .app-scroll-track p { font-size: 13px; }
-      .app-btn { width: 20px; height: 20px; font-size: 9px; }
-      .app-speed { display: none; }
-
-      /* Hero */
-      .hero { padding: 60px 20px 80px; margin-top: 60px; }
-      .hero-actions { flex-direction: column; align-items: center; }
-      .btn-primary, .btn-ghost { width: 100%; max-width: 300px; justify-content: center; }
-      .mockup-wrap { max-width: 100%; }
-
-      /* Sections */
-      section { padding: 80px 20px; }
-      .container { padding: 0; }
-
-      /* How it works */
-      .how-grid { grid-template-columns: 1fr; border-radius: 16px; }
-      .how-card { padding: 36px 28px; }
-
-      /* Notch section */
-      .notch-inner { grid-template-columns: 1fr; gap: 48px; }
-
-      /* Features */
-      .features-layout { grid-template-columns: 1fr; border-radius: 16px; }
-      .feat.wide, .feat.wider, .feat.narrow { grid-column: span 1; }
-      .feat { padding: 28px; }
-
-      /* CTA */
-      .download-row { flex-direction: column; align-items: center; }
-      .dl-btn { width: 100%; max-width: 300px; }
-
-      /* Footer */
-      .footer-wrap { flex-direction: column; text-align: center; padding: 32px 20px; }
-      .footer-links { justify-content: center; }
-    }
-
-    @media (max-width: 480px) {
-      .app-island { width: 200px; }
-      .app-ctrl-right { gap: 2px; }
-      .app-btn { width: 18px; height: 18px; font-size: 8px; }
-      .app-mic-label { display: none; }
-      .hero h1 { font-size: 42px; }
-      .section-h { font-size: 32px; }
-      .menubar-right svg:not(:last-of-type) { display: none; }
-    }
-  </style>
+  <link rel="stylesheet" href="main.css">
 </head>
 <body>
-
 <!-- FAKE MENUBAR -->
 <div class="menubar">
   <div class="menubar-left">
@@ -638,6 +27,13 @@
   </div>
 
   <!-- App UI replica -->
+<!-- App UI replica -->
+<div class="app-island-wrap">
+  <!-- Left concave SVG corner -->
+  <svg class="app-corner-l" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 0H0C6.62742 0 12 5.37258 12 12V0Z" fill="currentColor"/>
+  </svg>
+  
   <div class="app-island" id="notchPill">
     <!-- Scrolling script text -->
     <div class="app-scroll-mask">
@@ -668,8 +64,13 @@
         <button class="app-btn">✕</button>
       </div>
     </div>
-  </div>
+  </div><!-- /app-island -->
 
+  <!-- Right concave SVG corner -->
+  <svg class="app-corner-r" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0 0H12C5.37258 0 0 5.37258 0 12V0Z" fill="currentColor"/>
+  </svg>
+</div><!-- /app-island-wrap -->
   <div class="menubar-right">
     <!-- Our app tray icon (pill + dot + lines) -->
     <svg width="16" height="16" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.8">
@@ -703,12 +104,13 @@
       <path d="M22.5 4v4a2 2 0 0 0 0-4z" fill="rgba(255,255,255,0.5)"/>
     </svg>
 
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+      <span class="icon-sun">☀️</span>
+      <span class="icon-moon">🌙</span>
+    </button>
     <span class="menubar-time" id="mbTime"></span>
   </div>
 </div>
-
-
-
 <!-- HERO -->
 <section class="hero">
   <div class="orb orb-1"></div>
@@ -717,7 +119,7 @@
 
   <div class="hero-badge">
     <div class="badge-dot"></div>
-    v2.2 — Now on Windows · Free & Open Source
+    v3 — Dynamic Island Redesign · Free & Open Source
   </div>
 
   <h1>Speak naturally.<br><em>Present confidently.</em></h1>
@@ -730,61 +132,13 @@
     <a href="#download" class="btn-primary">↓ Download free</a>
     <a href="https://github.com/ArunNGun/openTeleprompt" target="_blank" class="btn-ghost">View source →</a>
   </div>
-
-  <div class="mockup-wrap">
-    <div class="mockup-glow"></div>
-    <div class="mockup">
-      <div class="mockup-titlebar">
-        <div class="tbar-spacer"></div>
-        <div class="tbar-pill">
-          <div class="tbar-dot-green"></div>
-          <span class="tbar-label">Listening</span>
-        </div>
-        <div class="tbar-spacer"></div>
-      </div>
-      <div class="mockup-body">
-        <div class="scroll-track">
-          <div class="s-line" style="width:94%"></div>
-          <div class="s-line" style="width:82%"></div>
-          <div class="s-line" style="width:91%"></div>
-          <div class="s-line" style="width:70%"></div>
-          <div class="s-line" style="width:86%"></div>
-          <div class="s-line" style="width:75%"></div>
-          <div class="s-line" style="width:88%"></div>
-          <div class="s-line" style="width:66%"></div>
-          <!-- Duplicate for seamless loop -->
-          <div class="s-line" style="width:94%"></div>
-          <div class="s-line" style="width:82%"></div>
-          <div class="s-line" style="width:91%"></div>
-          <div class="s-line" style="width:70%"></div>
-          <div class="s-line" style="width:86%"></div>
-          <div class="s-line" style="width:75%"></div>
-          <div class="s-line" style="width:88%"></div>
-          <div class="s-line" style="width:66%"></div>
-        </div>
-      </div>
-      <div class="mockup-footer">
-        <div class="mic-status">
-          <div class="mic-ring"><div class="mic-core"></div></div>
-          <span class="mic-text">Listening</span>
-        </div>
-        <div class="wave">
-          <div class="wb"></div><div class="wb"></div><div class="wb"></div>
-          <div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div>
-        </div>
-        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">1×</span>
-      </div>
-    </div>
-  </div>
 </section>
-
 <!-- HOW IT WORKS -->
 <section id="how" style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
   <div class="container">
     <span class="section-tag reveal">How it works</span>
     <h2 class="section-h reveal" style="transition-delay:0.1s">Three steps.<br>That's it.</h2>
     <p class="section-p reveal" style="transition-delay:0.2s">No accounts. No cloud. No complexity. Just you and your words.</p>
-
     <div class="how-grid">
       <div class="how-card reveal" data-num="1" style="transition-delay:0.1s">
         <div class="how-num">01 / Prepare</div>
@@ -807,69 +161,38 @@
     </div>
   </div>
 </section>
-
-<!-- NOTCH SECTION -->
-<section class="notch-section">
-  <div class="notch-inner">
-    <div class="reveal">
-      <span class="section-tag">Designed for macOS</span>
-      <h2 class="section-h">Lives in<br>the notch.</h2>
-      <p class="section-p" style="margin-bottom:32px">
-        Positioned exactly where your camera is. Your eyes stay natural — looking straight ahead — while your script scrolls silently below the lens.
-      </p>
-      <p style="font-size:14px;color:var(--dim);line-height:1.8;max-width:400px">
-        No notch? Switch to Classic mode — a freely draggable, resizable floating window that works on any Mac.
-      </p>
-    </div>
-    <div class="notch-demo-wrap reveal" style="transition-delay:0.2s">
-      <div class="notch-demo">
-        <div class="notch-bar">
-          <div class="notch-pill">
-            <div class="notch-pill-dot"></div>
-          </div>
-        </div>
-        <div class="notch-content" style="height:200px;overflow:hidden">
-          <div class="notch-scroll">
-            <div class="n-line" style="width:92%;background:rgba(255,255,255,0.85)"></div>
-            <div class="n-line" style="width:78%;background:rgba(255,255,255,0.6)"></div>
-            <div class="n-line" style="width:88%;background:rgba(255,255,255,0.4)"></div>
-            <div class="n-line" style="width:68%;background:rgba(255,255,255,0.25)"></div>
-            <div class="n-line" style="width:80%;background:rgba(255,255,255,0.14)"></div>
-            <div class="n-line" style="width:72%;background:rgba(255,255,255,0.07)"></div>
-            <div class="n-line" style="width:92%;background:rgba(255,255,255,0.85)"></div>
-            <div class="n-line" style="width:78%;background:rgba(255,255,255,0.6)"></div>
-            <div class="n-line" style="width:88%;background:rgba(255,255,255,0.4)"></div>
-            <div class="n-line" style="width:68%;background:rgba(255,255,255,0.25)"></div>
-            <div class="n-line" style="width:80%;background:rgba(255,255,255,0.14)"></div>
-            <div class="n-line" style="width:72%;background:rgba(255,255,255,0.07)"></div>
-          </div>
-        </div>
-        <div class="notch-bar-row">
-          <div class="mic-status">
-            <div class="mic-ring"><div class="mic-core"></div></div>
-            <span class="mic-text">Speaking</span>
-          </div>
-          <div class="wave">
-            <div class="wb"></div><div class="wb"></div><div class="wb"></div>
-            <div class="wb"></div><div class="wb"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- FEATURES -->
 <section id="features">
   <div class="container">
     <span class="section-tag reveal">Features</span>
     <h2 class="section-h reveal" style="transition-delay:0.1s">Everything you need.<br>Nothing you don't.</h2>
-
     <div class="features-layout">
-      <div class="feat wide reveal">
+      <!-- HERO: Dynamic Island -->
+      <div class="feat hero-feat reveal">
+        <div class="hero-feat-content">
+          <div class="hero-feat-text">
+            <span class="feat-tag">v3 Flagship</span>
+            <h3>Dynamic Island.<br><em>Redesigned.</em></h3>
+            <p>Seamless notch integration with Apple Dynamic Island-style animations. Real concave corners that blend into the notch bezel. Smooth spring physics. Pixel-perfect fit. Professional-grade — looks like it belongs there.</p>
+          </div>
+          <div class="hero-feat-demo">
+            <div class="di-pill-wrap">
+              <div class="di-corner-l"></div>
+              <div class="di-pill" id="diDemoPill">
+                <span class="di-dot"></span>
+                <span class="di-label">Teleprompter</span>
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 3.5L4.5 6L7 3.5" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="di-corner-r"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Voice scroll MVP -->
+      <div class="feat wide reveal" style="transition-delay:0.05s">
         <span class="feat-icon">🎙️</span>
-        <h3>Only hears <em>you</em></h3>
-        <p>Detects your voice using frequency analysis — not just volume. It listens for the 85–3400 Hz range of human speech and ignores everything outside it: meeting audio from your speakers, music, notifications. Your colleagues talking through your headphones won't trigger it. Only your voice does.</p>
+        <h3>Voice-activated scroll</h3>
+        <p>Speak naturally. Scrolls when you talk, pauses when you stop. Frequency analysis means only your voice triggers it — not meeting audio or background noise.</p>
         <div class="mini-wave">
           <div class="mw" style="height:8px;animation-delay:0s"></div>
           <div class="mw" style="height:16px;animation-delay:0.1s"></div>
@@ -880,34 +203,58 @@
           <div class="mw" style="height:8px;animation-delay:0.05s"></div>
         </div>
       </div>
+      <!-- Rich text editor -->
       <div class="feat wide reveal" style="transition-delay:0.1s">
-        <span class="feat-icon">🌗</span>
-        <h3>Opacity control</h3>
-        <p>Make the prompter semi-transparent to see your camera feed through it. Dial from 20% to fully opaque.</p>
-        <div class="opacity-demo">
-          <div class="opacity-bar"></div>
-          <div class="opacity-thumb"></div>
+        <span class="feat-icon">📝</span>
+        <h3>Rich text editor</h3>
+        <p>Bold, color highlights, cue markers. Format your script exactly how you want to read it. Live word count and estimated read time as you type.</p>
+        <div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap">
+          <span style="background:rgba(250,204,21,0.15);border:1px solid rgba(250,204,21,0.3);color:#facc15;font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:5px">[PAUSE]</span>
+          <span style="background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.3);color:#4ade80;font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:5px">[SLOW]</span>
+          <span style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);color:#a78bfa;font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:5px">[BREATHE]</span>
         </div>
       </div>
+
+      <div class="feat narrow reveal" style="transition-delay:0.1s">
+        <span class="feat-icon">📚</span>
+        <h3>Script library</h3>
+        <p>Save multiple scripts, switch between them. Auto-saves on start. No cloud, no account.</p>
+      </div>
+
       <div class="feat narrow reveal" style="transition-delay:0.15s">
-        <span class="feat-icon">🔇</span>
-        <h3>Invisible on screen share</h3>
-        <p>Toggle it and vanish from recordings and screen shares. Only you can see it.</p>
+        <span class="feat-icon">⏱️</span>
+        <h3>Word count & read time</h3>
+        <p>Live stats while editing. Know exactly how long your script runs before you go live.</p>
       </div>
+
       <div class="feat narrow reveal" style="transition-delay:0.2s">
-        <span class="feat-icon">🖱️</span>
-        <h3>Hover to pause</h3>
-        <p>Move your cursor over the prompter to freeze it instantly. Move away to resume.</p>
+        <span class="feat-icon">🌗</span>
+        <h3>Light & dark theme</h3>
+        <p>Switch themes from settings. Persists across sessions.</p>
       </div>
+
       <div class="feat narrow reveal" style="transition-delay:0.25s">
-        <span class="feat-icon">⚡</span>
-        <h3>Auto-scroll mode</h3>
-        <p>No mic? Toggle voice off for constant speed scrolling — no microphone needed.</p>
+        <span class="feat-icon">🖱️</span>
+        <h3>Classic mode</h3>
+        <p>Floating pill anywhere on screen. Drag to reposition. Works on any Mac — notch or not.</p>
       </div>
+
+      <div class="feat narrow reveal" style="transition-delay:0.3s">
+        <span class="feat-icon">⚡</span>
+        <h3>Live controls</h3>
+        <p>Adjust scroll speed and font size on the fly while reading. No need to stop.</p>
+      </div>
+
+      <div class="feat narrow reveal" style="transition-delay:0.35s">
+        <span class="feat-icon">🔇</span>
+        <h3>Hide on screen share</h3>
+        <p>Invisible to Zoom, Meet, Loom. Only you can see it.</p>
+      </div>
+
       <div class="feat wide reveal" style="transition-delay:0.1s">
         <span class="feat-icon">⌨️</span>
-        <h3>Keyboard shortcuts</h3>
-        <p>Full control without touching the mouse.</p>
+        <h3>Global shortcuts</h3>
+        <p>Control everything without touching the mouse.</p>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:20px">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:12px;color:var(--muted)">Pause / Resume</span>
@@ -923,11 +270,21 @@
           </div>
         </div>
       </div>
+
       <div class="feat wide reveal" style="transition-delay:0.15s">
-        <span class="feat-icon">💾</span>
-        <h3>Script storage</h3>
-        <p>Scripts save automatically on your Mac. No cloud, no account. Reload any script instantly with one click. Word count and read time shown live.</p>
+        <span class="feat-icon">🌫️</span>
+        <h3>Adjustable opacity</h3>
+        <p>Dial in how transparent the overlay sits on screen. All the way from barely-there to solid. Stays out of your eyeline exactly as much as you want.</p>
+        <div class="opacity-demo">
+          <div class="opacity-bar"></div>
+          <div class="opacity-thumb"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px">
+          <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">transparent</span>
+          <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">solid</span>
+        </div>
       </div>
+
     </div>
   </div>
 </section>
@@ -971,8 +328,8 @@
         This strips the quarantine attribute from the app bundle. <code style="font-family:monospace">xattr</code> manages extended file attributes on macOS, <code style="font-family:monospace">-c</code> clears them, and <code style="font-family:monospace">-r</code> applies recursively to the whole bundle. One-time fix — you won't need to do it again.</p></div></div>
       </div>
       <div class="faq-item reveal" style="transition-delay:0.3s">
-        <button class="faq-q">What changed in v2.2?<span class="faq-arrow">↓</span></button>
-        <div class="faq-a"><div class="faq-inner"><p>v2.0 is a complete rewrite of the native backend in Rust using Tauri v2, replacing the old Electron runtime. The result: a 4.6MB binary (down from ~150MB), ~40MB RAM usage (down from ~200MB), and a 2.6MB DMG installer (down from ~80MB). The frontend (UI, features, shortcuts) is unchanged — it's the same experience, just dramatically lighter and faster to launch.</p></div></div>
+        <button class="faq-q">What's new in v3?<span class="faq-arrow">↓</span></button>
+        <div class="faq-a"><div class="faq-inner"><p>v3 is a complete UI overhaul. Dynamic Island mode now features real concave corners and Apple spring physics animations — it looks like part of the OS. New in v3: rich text editor with color highlights and cue markers, script library, light/dark theme, smart cue markers ([PAUSE] [SLOW] [BREATHE]), live speed & font control while reading, and a redesigned classic mode. Same tiny binary, same voice-activated scroll core.</p></div></div>
       </div>
       <div class="faq-item reveal" style="transition-delay:0.35s">
         <button class="faq-q">Is it really free?<span class="faq-arrow">↓</span></button>
@@ -990,27 +347,27 @@
   <p class="reveal" style="transition-delay:0.2s">Free. Open source. No account needed.</p>
   <div class="download-row reveal" style="transition-delay:0.3s">
     <a href="https://github.com/ArunNGun/openTeleprompt/releases/latest" class="dl-btn" style="position:relative">
-      <span style="position:absolute;top:10px;right:12px;font-size:9px;font-family:'DM Mono',monospace;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--green);padding:2px 7px;border-radius:100px;letter-spacing:0.06em">v2.2 NEW</span>
+      <span style="position:absolute;top:10px;right:12px;font-size:9px;font-family:'DM Mono',monospace;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--green);padding:2px 7px;border-radius:100px;letter-spacing:0.06em">v3 NEW</span>
       <span class="dl-tag">🍎 Apple Silicon</span>
       <span class="dl-title">↓ Download for M1–M4</span>
-      <span class="dl-sub">arm64 · macOS 13+ · v2.2.1</span>
+      <span class="dl-sub">arm64 · macOS 13+ · v3.0</span>
     </a>
     <a href="https://github.com/ArunNGun/openTeleprompt/releases/latest" class="dl-btn">
       <span class="dl-tag">🍎 Intel Mac</span>
       <span class="dl-title">↓ Download for Intel</span>
-      <span class="dl-sub">x64 · macOS 13+ · v2.2.1</span>
+      <span class="dl-sub">x64 · macOS 13+ · v3.0</span>
     </a>
     <a href="https://github.com/ArunNGun/openTeleprompt/releases/latest" class="dl-btn" style="position:relative">
       <span style="position:absolute;top:10px;right:12px;font-size:9px;font-family:'DM Mono',monospace;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--green);padding:2px 7px;border-radius:100px;letter-spacing:0.06em">NEW</span>
       <span class="dl-tag">🪟 Windows</span>
       <span class="dl-title">↓ Download for Windows</span>
-      <span class="dl-sub">x64 · Windows 10+ · v2.2.1</span>
+      <span class="dl-sub">x64 · Windows 10+ · v3.0</span>
     </a>
   </div>
 
   <!-- v2.0 callout -->
   <div class="reveal" style="transition-delay:0.35s;max-width:520px;margin:0 auto 32px;background:var(--accent-dim);border:1px solid rgba(129,140,248,0.25);border-radius:14px;padding:20px 24px;text-align:left">
-    <p style="font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px">✦ v2.2 — Windows Support</p>
+    <p style="font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px">✦ v3 — Dynamic Island Redesign</p>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
       <div>
         <p style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--text)">4.6 MB</p>
@@ -1025,7 +382,7 @@
         <p style="font-size:11px;color:var(--muted)">DMG (was 80MB)</p>
       </div>
     </div>
-    <p style="font-size:12px;color:var(--muted);line-height:1.7">Same features, same UI — just a Rust/Tauri v2 backend replacing Electron. Faster launch, fraction of the memory, tiny installer.</p>
+    <p style="font-size:12px;color:var(--muted);line-height:1.7">Dynamic Island redesigned. Rich text editor. Script library. Light/dark theme. Smart cue markers. Classic mode overhauled. Same tiny binary, same voice scroll core.</p>
   </div>
 
   <div class="reveal install-steps" style="transition-delay:0.4s">
@@ -1066,46 +423,6 @@
   </div>
 </div>
 
-<script>
-  // Hover pause label
-  const island = document.getElementById('notchPill')
-  const micLabel = island.querySelector('.app-mic-label')
-  island.addEventListener('mouseenter', () => { micLabel.textContent = 'Hover pause' })
-  island.addEventListener('mouseleave', () => { micLabel.textContent = 'Speaking' })
-
-  // Live menubar clock
-  function updateClock() {
-    const t = new Date()
-    const h = t.getHours().toString().padStart(2,'0')
-    const m = t.getMinutes().toString().padStart(2,'0')
-    const el = document.getElementById('mbTime')
-    if (el) el.textContent = `${h}:${m}`
-  }
-  updateClock()
-  setInterval(updateClock, 10000)
-
-
-
-  // Scroll reveal
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach((e, i) => {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible')
-        io.unobserve(e.target)
-      }
-    })
-  }, { threshold: 0.08 })
-  document.querySelectorAll('.reveal').forEach(el => io.observe(el))
-
-  // FAQ accordion
-  document.querySelectorAll('.faq-q').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const item = btn.closest('.faq-item')
-      const isOpen = item.classList.contains('open')
-      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'))
-      if (!isOpen) item.classList.add('open')
-    })
-  })
-</script>
+<script src="main.js"></script>
 </body>
 </html>
