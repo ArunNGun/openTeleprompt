@@ -232,138 +232,127 @@
     </div>
   </div>
 </section>
-<!-- FEATURES BENTO -->
+<!-- FEATURES -->
 <section id="features">
   <div class="container">
     <span class="section-tag reveal">Features</span>
     <h2 class="section-h reveal" style="transition-delay:0.1s">Everything you need.<br>Nothing you don't.</h2>
-
-    <div class="bento-grid">
-
-      <!-- CELL 1: Dynamic Island — big hero, spans 2 cols × 2 rows -->
-      <div class="bento-cell bento-di reveal" style="transition-delay:0.05s">
-        <div class="bento-di-bar">
-          <div class="bento-di-corner-l"></div>
-          <div class="bento-di-pill">
-            <span class="bento-di-dot"></span>
-            <span style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.8)">Teleprompter</span>
+    <div class="features-layout">
+      <!-- HERO: Dynamic Island -->
+      <div class="feat hero-feat reveal">
+        <div class="hero-feat-content">
+          <div class="hero-feat-text">
+            <span class="feat-tag">v3 Flagship</span>
+            <h3>Dynamic Island.<br><em>Redesigned.</em></h3>
+            <p>Seamless notch integration with Apple Dynamic Island-style animations. Real concave corners that blend into the notch bezel. Smooth spring physics. Pixel-perfect fit. Professional-grade — looks like it belongs there.</p>
           </div>
-          <div class="bento-di-corner-r"></div>
-        </div>
-        <div class="bento-di-text">
-          <span class="bento-tag" style="--tag-c:#a78bfa;--tag-bg:rgba(167,139,250,0.12)">v3 Flagship</span>
-          <h3>Dynamic Island.<br><em>Redesigned.</em></h3>
-          <p>Seamless notch integration with real concave corners and Apple spring physics. Looks like it belongs there.</p>
+          <div class="hero-feat-demo">
+            <div class="di-pill-wrap">
+              <div class="di-corner-l"></div>
+              <div class="di-pill" id="diDemoPill">
+                <span class="di-dot"></span>
+                <span class="di-label">Teleprompter</span>
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 3.5L4.5 6L7 3.5" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="di-corner-r"></div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <!-- CELL 2: Voice scroll — tall right column -->
-      <div class="bento-cell bento-voice reveal" style="transition-delay:0.1s">
-        <span class="bento-tag" style="--tag-c:#34d399;--tag-bg:rgba(52,211,153,0.12)">Core feature</span>
-        <div class="bento-icon">🎙️</div>
+      <!-- Voice scroll -->
+      <div class="feat wide reveal" style="transition-delay:0.05s">
+        <span class="feat-icon">🎙️</span>
         <h3>Voice-activated scroll</h3>
-        <p>Speak — it scrolls. Pause — it stops. Frequency analysis means only your voice triggers it.</p>
-        <div class="bento-wave">
-          <div class="bw" style="--h:8px;--d:0s"></div>
-          <div class="bw" style="--h:20px;--d:0.08s"></div>
-          <div class="bw" style="--h:32px;--d:0.16s"></div>
-          <div class="bw" style="--h:44px;--d:0.12s"></div>
-          <div class="bw" style="--h:36px;--d:0.2s"></div>
-          <div class="bw" style="--h:20px;--d:0.08s"></div>
-          <div class="bw" style="--h:28px;--d:0.18s"></div>
-          <div class="bw" style="--h:12px;--d:0.04s"></div>
-          <div class="bw" style="--h:40px;--d:0.14s"></div>
-          <div class="bw" style="--h:24px;--d:0.1s"></div>
+        <p>Speak naturally. Scrolls when you talk, pauses when you stop. Frequency analysis means only your voice triggers it — not meeting audio or background noise.</p>
+        <div class="mini-wave">
+          <div class="mw" style="height:8px;animation-delay:0s"></div>
+          <div class="mw" style="height:16px;animation-delay:0.1s"></div>
+          <div class="mw" style="height:24px;animation-delay:0.2s"></div>
+          <div class="mw" style="height:32px;animation-delay:0.15s"></div>
+          <div class="mw" style="height:24px;animation-delay:0.25s"></div>
+          <div class="mw" style="height:16px;animation-delay:0.1s"></div>
+          <div class="mw" style="height:8px;animation-delay:0.05s"></div>
+        </div>
+      </div>
+      <!-- Rich text editor -->
+      <div class="feat wide reveal" style="transition-delay:0.1s">
+        <span class="feat-icon">📝</span>
+        <h3>Rich text editor</h3>
+        <p>Bold, color highlights, cue markers. Format your script exactly how you want to read it. Live word count and estimated read time as you type.</p>
+        <div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap">
+          <span style="background:rgba(250,204,21,0.15);border:1px solid rgba(250,204,21,0.3);color:#d97706;font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:5px">[PAUSE]</span>
+          <span style="background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.3);color:#16a34a;font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:5px">[SLOW]</span>
+          <span style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);color:var(--accent);font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:5px">[BREATHE]</span>
         </div>
       </div>
 
-      <!-- CELL 3: Rich editor -->
-      <div class="bento-cell bento-editor reveal" style="transition-delay:0.12s">
-        <span class="bento-tag" style="--tag-c:#fbbf24;--tag-bg:rgba(251,191,36,0.12)">Rich text</span>
-        <div class="bento-icon">📝</div>
-        <h3>Script editor</h3>
-        <p>Bold, highlights, cue markers. Live word count and read time.</p>
-        <div class="bento-cues">
-          <span class="bcue bcue-pause">[PAUSE]</span>
-          <span class="bcue bcue-slow">[SLOW]</span>
-          <span class="bcue bcue-breathe">[BREATHE]</span>
-        </div>
-      </div>
-
-      <!-- CELL 4: Stealth -->
-      <div class="bento-cell bento-stealth reveal" style="transition-delay:0.14s">
-        <div class="bento-icon">🔇</div>
-        <h3>Invisible to<br>screen share</h3>
-        <p>Zoom, Meet, Loom — none of them can see it. Only you.</p>
-        <div class="bento-eye">
-          <svg width="48" height="30" viewBox="0 0 48 30" fill="none">
-            <path d="M2 15 C8 4, 40 4, 46 15 C40 26, 8 26, 2 15Z" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.3"/>
-            <circle cx="24" cy="15" r="6" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.4"/>
-            <line x1="4" y1="4" x2="44" y2="26" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-          </svg>
-        </div>
-      </div>
-
-      <!-- CELL 5: Shortcuts -->
-      <div class="bento-cell bento-shortcuts reveal" style="transition-delay:0.16s">
-        <span class="bento-tag" style="--tag-c:#60a5fa;--tag-bg:rgba(96,165,250,0.12)">Keyboard</span>
-        <div class="bento-icon">⌨️</div>
-        <h3>Global shortcuts</h3>
-        <div class="bento-kbd-list">
-          <div class="bkbd-row"><span class="bkbd-label">Pause</span><kbd>⌘⇧Space</kbd></div>
-          <div class="bkbd-row"><span class="bkbd-label">Speed</span><kbd>⌘⇧↑↓</kbd></div>
-          <div class="bkbd-row"><span class="bkbd-label">Reset</span><kbd>⌘⇧R</kbd></div>
-        </div>
-      </div>
-
-      <!-- CELL 6: Opacity -->
-      <div class="bento-cell bento-opacity reveal" style="transition-delay:0.18s">
-        <div class="bento-icon">🌫️</div>
-        <h3>Adjustable opacity</h3>
-        <p>Barely-there to solid. You decide.</p>
-        <div class="bento-opacity-demo">
-          <div class="bento-opacity-track">
-            <div class="bento-opacity-fill"></div>
-            <div class="bento-opacity-thumb"></div>
-          </div>
-          <div class="bento-opacity-labels"><span>transparent</span><span>solid</span></div>
-        </div>
-      </div>
-
-      <!-- CELL 7: Library -->
-      <div class="bento-cell bento-library reveal" style="transition-delay:0.2s">
-        <div class="bento-icon">📚</div>
+      <div class="feat narrow reveal" style="transition-delay:0.1s">
+        <span class="feat-icon">📚</span>
         <h3>Script library</h3>
-        <p>Save multiple scripts, switch in one tap. Auto-saves. No cloud.</p>
-        <div class="bento-scripts">
-          <div class="bscript bscript-active">Intro speech ✓</div>
-          <div class="bscript">Q4 All-hands</div>
-          <div class="bscript">Podcast opener</div>
-        </div>
+        <p>Save multiple scripts, switch between them. Auto-saves on start. No cloud, no account.</p>
       </div>
 
-      <!-- CELL 8: Classic mode -->
-      <div class="bento-cell bento-classic reveal" style="transition-delay:0.22s">
-        <div class="bento-icon">🖱️</div>
+      <div class="feat narrow reveal" style="transition-delay:0.15s">
+        <span class="feat-icon">⏱️</span>
+        <h3>Word count & read time</h3>
+        <p>Live stats while editing. Know exactly how long your script runs before you go live.</p>
+      </div>
+
+      <div class="feat narrow reveal" style="transition-delay:0.2s">
+        <span class="feat-icon">🌗</span>
+        <h3>Light & dark theme</h3>
+        <p>Switch themes from settings. Persists across sessions.</p>
+      </div>
+
+      <div class="feat narrow reveal" style="transition-delay:0.25s">
+        <span class="feat-icon">🖱️</span>
         <h3>Classic mode</h3>
-        <p>No notch? No problem. Drag the floating pill anywhere on screen.</p>
-        <div class="bento-pill-float">
-          <div class="bfloat-pill">
-            <span class="bfloat-dot"></span>
-            <span style="font-size:10px;color:rgba(255,255,255,0.7)">1.5×</span>
-            <span style="font-size:10px;color:rgba(255,255,255,0.5)">⏸</span>
+        <p>Floating pill anywhere on screen. Drag to reposition. Works on any Mac — notch or not.</p>
+      </div>
+
+      <div class="feat narrow reveal" style="transition-delay:0.3s">
+        <span class="feat-icon">⚡</span>
+        <h3>Live controls</h3>
+        <p>Adjust scroll speed and font size on the fly while reading. No need to stop.</p>
+      </div>
+
+      <div class="feat narrow reveal" style="transition-delay:0.35s">
+        <span class="feat-icon">🔇</span>
+        <h3>Hide on screen share</h3>
+        <p>Invisible to Zoom, Meet, Loom. Only you can see it.</p>
+      </div>
+
+      <div class="feat wide reveal" style="transition-delay:0.1s">
+        <span class="feat-icon">⌨️</span>
+        <h3>Global shortcuts</h3>
+        <p>Control everything without touching the mouse.</p>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:20px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--muted)">Pause / Resume</span>
+            <span style="font-family:'DM Mono',monospace;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:3px 8px;color:var(--dim)">⌘⇧Space</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--muted)">Speed Up / Down</span>
+            <span style="font-family:'DM Mono',monospace;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:3px 8px;color:var(--dim)">⌘⇧↑↓</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--muted)">Reset to Top</span>
+            <span style="font-family:'DM Mono',monospace;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:3px 8px;color:var(--dim)">⌘⇧R</span>
           </div>
         </div>
       </div>
 
-      <!-- CELL 9: Stats -->
-      <div class="bento-cell bento-stats reveal" style="transition-delay:0.24s">
-        <div class="bento-icon">⏱️</div>
-        <h3>Live stats</h3>
-        <p>Word count + read time as you type.</p>
-        <div class="bento-stat-nums">
-          <div class="bstat"><span class="bstat-n">247</span><span class="bstat-l">words</span></div>
-          <div class="bstat"><span class="bstat-n">1:52</span><span class="bstat-l">est. time</span></div>
+      <div class="feat wide reveal" style="transition-delay:0.15s">
+        <span class="feat-icon">🌫️</span>
+        <h3>Adjustable opacity</h3>
+        <p>Dial in how transparent the overlay sits on screen. All the way from barely-there to solid. Stays out of your eyeline exactly as much as you want.</p>
+        <div class="opacity-demo">
+          <div class="opacity-bar"></div>
+          <div class="opacity-thumb"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px">
+          <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">transparent</span>
+          <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">solid</span>
         </div>
       </div>
 
