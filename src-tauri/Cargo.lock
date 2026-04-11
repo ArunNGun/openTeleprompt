@@ -2236,7 +2236,7 @@ dependencies = [
 
 [[package]]
 name = "open-teleprompter"
-version = "2.2.1"
+version = "3.0.0"
 dependencies = [
  "dirs 5.0.1",
  "objc2",
