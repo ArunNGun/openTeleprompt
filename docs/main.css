@@ -104,7 +104,7 @@
       opacity: 1;
       transform: translateY(0);
     }
-    .menubar-hint.gone { display: none; }
+    .menubar-hint.gone { opacity: 0.5; }
 
     /* ── MENUBAR MENUS ── */
     .mb-menu {
