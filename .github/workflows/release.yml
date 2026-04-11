@@ -23,6 +23,68 @@ jobs:
           name: ${{ github.ref_name }} — OpenTeleprompter
           draft: false
           prerelease: false
+          body: |
+            ## OpenTeleprompter v3.0 — Dynamic Island Redesign
+
+            This is a complete UI overhaul. Everything you loved about v2 is still here — same voice-scroll core, same tiny binary — but the entire interface has been rebuilt from the ground up.
+
+            ---
+
+            ### ✦ What's new in v3
+
+            **Dynamic Island — properly done**
+            The notch overlay now has real concave corners that bite into the menubar bezel exactly like Apple's Dynamic Island. Apple spring physics (`cubic-bezier(0.32, 0.72, 0, 1)`) for all expand/collapse animations. It looks like part of the OS.
+
+            **React frontend**
+            The entire UI is now built in React + Vite with a proper Zustand store. This unlocks fast iteration, clean state management, and a foundation for every feature we want to add next.
+
+            **Rich text editor (Tiptap)**
+            Bold, italic, color highlights, and smart cue markers: `[PAUSE]`, `[SLOW]`, `[BREATHE]`. Format your script exactly how you want to deliver it.
+
+            **Script library**
+            Save multiple scripts, switch between them instantly. Auto-saves on start. No cloud, no account, everything stays local.
+
+            **Light & dark theme**
+            Full theme support with a pastel light mode as default. Toggle from the menubar or settings.
+
+            **Live controls while reading**
+            Adjust scroll speed and font size on the fly — no need to pause your delivery.
+
+            **Redesigned settings panel**
+            A clean React settings view with ResizeObserver-driven auto-height. All your preferences in one place, persisted across sessions.
+
+            **Visual test suite**
+            16 Playwright tests covering 48 state combos (notch/classic × idle/edit/read × dark/light). Confidence in every release.
+
+            ---
+
+            ### 📦 This release — macOS only
+
+            > **Windows:** v3 has not been tested on Windows yet. Windows users should continue using [v2.2.1](https://github.com/ArunNGun/openTeleprompt/releases/tag/v2.2.1) which is stable. Windows v3 is coming soon.
+
+            | Platform | File | Notes |
+            |---|---|---|
+            | 🍎 Apple Silicon (M1–M4) | `OpenTeleprompter_3.0.0_aarch64.dmg` | macOS 13+ |
+            | 🍎 Intel Mac | `OpenTeleprompter_3.0.0_x64.dmg` | macOS 13+ |
+
+            ---
+
+            ### ⚠️ First launch on macOS
+
+            macOS will warn the app is "damaged" because it isn't signed with an Apple Developer cert. It's not damaged — just remove the quarantine flag:
+
+            ```bash
+            xattr -cr /Applications/OpenTeleprompter.app
+            ```
+
+            Then double-click normally. You only need to do this once.
+
+            ---
+
+            ### 🙏 Support
+
+            OpenTeleprompter is free and open source (MIT). If it saves you time, consider leaving a ⭐ on GitHub — it helps more people find it.
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -86,34 +148,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-windows:
-    name: Build Windows (x64)
-    runs-on: windows-latest
-    needs: create-release
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-msvc
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - run: npm install
-
-      - name: Build
-        run: npx @tauri-apps/cli build --target x86_64-pc-windows-msvc
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload installer
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
-            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # Windows build intentionally skipped for v3.0.0
+  # v3 has not been validated on Windows yet.
+  # Windows users: continue using v2.2.1 (stable).
+  # Windows v3 is coming in a follow-up release.

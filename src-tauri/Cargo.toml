@@ -1,6 +1,6 @@
 [package]
 name = "open-teleprompter"
-version = "2.2.1"
+version = "3.0.0"
 description = "OpenTeleprompter — voice-activated teleprompter"
 authors = ["Arun Kumar"]
 edition = "2021"
