@@ -286,66 +286,110 @@
         </div>
       </div>
 
+      <!-- Script library -->
       <div class="feat narrow reveal" style="transition-delay:0.1s">
         <span class="feat-icon">📚</span>
         <h3>Script library</h3>
-        <p>Save multiple scripts, switch between them. Auto-saves on start. No cloud, no account.</p>
+        <p>Save multiple scripts, switch in one tap. Auto-saves on start. No cloud, no account — everything lives on your machine.</p>
+        <div class="feat-script-list">
+          <div class="fscript fscript-active">Intro speech ✓</div>
+          <div class="fscript">Q4 All-hands</div>
+          <div class="fscript">Podcast opener</div>
+        </div>
       </div>
 
+      <!-- Word count / Live stats -->
       <div class="feat narrow reveal" style="transition-delay:0.15s">
         <span class="feat-icon">⏱️</span>
-        <h3>Word count & read time</h3>
-        <p>Live stats while editing. Know exactly how long your script runs before you go live.</p>
+        <h3>Live stats</h3>
+        <p>Word count and estimated read time update as you type — so you know exactly how long your script runs before you go live.</p>
+        <div class="feat-stat-row">
+          <div class="fstat"><span class="fstat-n">247</span><span class="fstat-l">WORDS</span></div>
+          <div class="fstat"><span class="fstat-n">1:52</span><span class="fstat-l">EST. TIME</span></div>
+        </div>
       </div>
 
+      <!-- Light & dark theme -->
       <div class="feat narrow reveal" style="transition-delay:0.2s">
         <span class="feat-icon">🌗</span>
         <h3>Light & dark theme</h3>
-        <p>Switch themes from settings. Persists across sessions.</p>
+        <p>Pastel light mode by default. Switch to dark with one click — from settings or the menubar. Preference saved across sessions.</p>
+        <div class="feat-theme-demo">
+          <div class="ftheme ftheme-light"><span>☀️</span> Light</div>
+          <div class="ftheme ftheme-dark"><span>🌙</span> Dark</div>
+        </div>
       </div>
 
+      <!-- Classic mode -->
       <div class="feat narrow reveal" style="transition-delay:0.25s">
         <span class="feat-icon">🖱️</span>
         <h3>Classic mode</h3>
-        <p>Floating pill anywhere on screen. Drag to reposition. Works on any Mac — notch or not.</p>
-      </div>
-
-      <div class="feat narrow reveal" style="transition-delay:0.3s">
-        <span class="feat-icon">⚡</span>
-        <h3>Live controls</h3>
-        <p>Adjust scroll speed and font size on the fly while reading. No need to stop.</p>
-      </div>
-
-      <div class="feat narrow reveal" style="transition-delay:0.35s">
-        <span class="feat-icon">🔇</span>
-        <h3>Hide on screen share</h3>
-        <p>Invisible to Zoom, Meet, Loom. Only you can see it.</p>
-      </div>
-
-      <div class="feat wide reveal" style="transition-delay:0.1s">
-        <span class="feat-icon">⌨️</span>
-        <h3>Global shortcuts</h3>
-        <p>Control everything without touching the mouse.</p>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:20px">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:12px;color:var(--muted)">Pause / Resume</span>
-            <span style="font-family:'DM Mono',monospace;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:3px 8px;color:var(--dim)">⌘⇧Space</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:12px;color:var(--muted)">Speed Up / Down</span>
-            <span style="font-family:'DM Mono',monospace;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:3px 8px;color:var(--dim)">⌘⇧↑↓</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:12px;color:var(--muted)">Reset to Top</span>
-            <span style="font-family:'DM Mono',monospace;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:3px 8px;color:var(--dim)">⌘⇧R</span>
+        <p>No notch? No problem. Drag the floating pill anywhere on screen. Resize it. Works on every Mac — notch or not.</p>
+        <div class="feat-pill-float">
+          <div class="fpill">
+            <span class="fpill-dot"></span>
+            <span class="fpill-speed">1.5×</span>
+            <span class="fpill-pause">⏸</span>
           </div>
         </div>
       </div>
 
+      <!-- Live controls -->
+      <div class="feat narrow reveal" style="transition-delay:0.3s">
+        <span class="feat-icon">⚡</span>
+        <h3>Live controls</h3>
+        <p>Adjust scroll speed and font size on the fly while reading. Hit + or − without stopping your delivery — zero interruption.</p>
+        <div class="feat-controls-demo">
+          <div class="fctrl-row">
+            <span class="fctrl-label">Speed</span>
+            <div class="fctrl-btns">
+              <button class="fctrl-btn" onclick="this.parentNode.querySelector('.fctrl-val').textContent=Math.max(0.5,(parseFloat(this.parentNode.querySelector('.fctrl-val').textContent)-0.5)).toFixed(1)+'×'">-</button>
+              <span class="fctrl-val">1.5×</span>
+              <button class="fctrl-btn" onclick="this.parentNode.querySelector('.fctrl-val').textContent=Math.min(4.0,(parseFloat(this.parentNode.querySelector('.fctrl-val').textContent)+0.5)).toFixed(1)+'×'">+</button>
+            </div>
+          </div>
+          <div class="fctrl-row">
+            <span class="fctrl-label">Font</span>
+            <div class="fctrl-btns">
+              <button class="fctrl-btn" onclick="this.parentNode.querySelector('.fctrl-val').textContent=Math.max(12,(parseInt(this.parentNode.querySelector('.fctrl-val').textContent)-2))+'px'">A−</button>
+              <span class="fctrl-val">20px</span>
+              <button class="fctrl-btn" onclick="this.parentNode.querySelector('.fctrl-val').textContent=Math.min(48,(parseInt(this.parentNode.querySelector('.fctrl-val').textContent)+2))+'px'">A+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hide on screen share -->
+      <div class="feat narrow reveal" style="transition-delay:0.35s">
+        <span class="feat-icon">🔇</span>
+        <h3>Hide on screen share</h3>
+        <p>Toggle once in settings and the overlay becomes completely invisible — to Zoom, Meet, Loom, and any screen recorder. Only you can see it.</p>
+        <div class="feat-stealth-badges">
+          <span class="fstealth-badge">Zoom</span>
+          <span class="fstealth-badge">Meet</span>
+          <span class="fstealth-badge">Loom</span>
+          <span class="fstealth-badge fstealth-hidden">👀 hidden</span>
+        </div>
+      </div>
+
+      <!-- Global shortcuts -->
+      <div class="feat wide reveal" style="transition-delay:0.1s">
+        <span class="feat-icon">⌨️</span>
+        <h3>Global shortcuts</h3>
+        <p>Control everything without touching the mouse. Shortcuts work even when the app is behind other windows — so you never break eye contact with the camera.</p>
+        <div class="feat-kbd-grid">
+          <div class="fkbd-row"><span class="fkbd-label">Pause / Resume</span><kbd>⌘⇧Space</kbd></div>
+          <div class="fkbd-row"><span class="fkbd-label">Speed Up / Down</span><kbd>⌘⇧↑↓</kbd></div>
+          <div class="fkbd-row"><span class="fkbd-label">Font Bigger / Smaller</span><kbd>⌘⇧+−</kbd></div>
+          <div class="fkbd-row"><span class="fkbd-label">Reset to Top</span><kbd>⌘⇧R</kbd></div>
+        </div>
+      </div>
+
+      <!-- Opacity -->
       <div class="feat wide reveal" style="transition-delay:0.15s">
         <span class="feat-icon">🌫️</span>
         <h3>Adjustable opacity</h3>
-        <p>Dial in how transparent the overlay sits on screen. All the way from barely-there to solid. Stays out of your eyeline exactly as much as you want.</p>
+        <p>Dial in exactly how much the overlay blends into your screen. Barely-there ghost mode for maximum focus, or fully opaque for easy reading. Set it once and forget it.</p>
         <div class="opacity-demo">
           <div class="opacity-bar"></div>
           <div class="opacity-thumb"></div>
