@@ -1117,6 +1117,7 @@
     }
 
     @media (max-width: 480px) {
+      .menubar-time { display: none; }
       .app-island { width: 200px; }
       .app-ctrl-right { gap: 2px; }
       .app-btn { width: 18px; height: 18px; font-size: 8px; }
