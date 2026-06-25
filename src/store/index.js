@@ -11,6 +11,7 @@ export const useAppStore = create((set, get) => ({
     opacity: 1,
     threshold: 0.018,
     autoScroll: false,
+    micAccessEnabled: true,
     micDeviceId: 'default',
     theme: 'dark',
   },

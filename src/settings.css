@@ -99,6 +99,13 @@ body {
 .s-col { flex-direction: column; align-items: flex-start; gap: 8px; }
 .s-label { font-size: 11px; font-weight: 600; color: var(--s-label); letter-spacing: 0.04em; }
 .s-val { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--s-val); }
+.s-help {
+  padding: 0 14px 6px;
+  font-size: 9px;
+  line-height: 1.35;
+  color: var(--s-muted);
+}
+.s-disabled { opacity: 0.5; }
 
 /* ── Slider ── */
 .s-slider {
@@ -124,6 +131,7 @@ body {
 }
 .s-switch input:checked + .s-sw { background: var(--s-on); }
 .s-switch input:checked + .s-sw::before { transform: translateX(14px); }
+.s-switch.disabled { opacity: 0.45; pointer-events: none; }
 
 /* ── Mode toggle ── */
 .s-mode-group {

@@ -69,6 +69,8 @@ use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut,
 use tauri_plugin_positioner::{Position, WindowExt};
 
 // ── Config ─────────────────────────────────────────────────
+fn default_mic_access_enabled() -> bool { true }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -78,6 +80,8 @@ pub struct Config {
     pub mode: String,
     pub opacity: f64,
     pub auto_scroll: bool,
+    #[serde(default = "default_mic_access_enabled")]
+    pub mic_access_enabled: bool,
     pub mic_device_id: String,
     pub theme: String,
 }
@@ -96,7 +100,8 @@ impl Default for Config {
             screenshare_hidden: true,  // hide on screenshare: ON by default (both platforms)
             mode: default_mode,
             opacity: 1.0,
-            auto_scroll: true,         // voice input: ON by default (both platforms)
+            auto_scroll: true,         // auto-scroll ON by default (no mic stream)
+            mic_access_enabled: true,
             mic_device_id: "default".to_string(),
             theme: "dark".to_string(),
         }
@@ -292,6 +297,7 @@ fn set_config(app: AppHandle, state: State<AppState>, patch: serde_json::Value) 
     if let Some(v) = patch.get("mode").and_then(|v| v.as_str()) { cfg.mode = v.to_string(); }
     if let Some(v) = patch.get("opacity").and_then(|v| v.as_f64()) { cfg.opacity = v; }
     if let Some(v) = patch.get("autoScroll").and_then(|v| v.as_bool()) { cfg.auto_scroll = v; }
+    if let Some(v) = patch.get("micAccessEnabled").and_then(|v| v.as_bool()) { cfg.mic_access_enabled = v; }
     if let Some(v) = patch.get("micDeviceId").and_then(|v| v.as_str()) { cfg.mic_device_id = v.to_string(); }
     if let Some(v) = patch.get("theme").and_then(|v| v.as_str()) { cfg.theme = v.to_string(); }
 

@@ -79,6 +79,9 @@
     }
     input:checked + .sw { background: #22c55e; }
     input:checked + .sw::before { transform: translateX(14px); }
+    input:disabled + .sw { opacity: 0.45; cursor: default; }
+    .help { padding: 0 14px 6px; font-size: 9px; line-height: 1.35; color: rgba(255,255,255,0.28); }
+    .disabled { opacity: 0.5; }
 
     /* Mode toggle */
     .mode-group { display: flex; background: rgba(255,255,255,0.05); border-radius: 7px; padding: 2px; gap: 2px; }
@@ -147,6 +150,15 @@
 
       <div class="divider"></div>
 
+      <!-- Microphone access -->
+      <div class="row">
+        <span class="row-label">Microphone Access</span>
+        <label class="switch"><input type="checkbox" id="mic-access-toggle" checked><span class="sw"></span></label>
+      </div>
+      <div class="help">Off means OpenTeleprompter never opens an audio input stream.</div>
+
+      <div class="divider"></div>
+
       <!-- Scroll mode -->
       <div class="row">
         <span class="row-label">Voice Input</span>
@@ -172,7 +184,7 @@
       <div class="divider"></div>
 
       <!-- Microphone selector -->
-      <div class="row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+      <div class="row" id="mic-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
         <span class="row-label">Microphone</span>
         <select id="mic-select" style="
           width:100%; background:rgba(255,255,255,0.06);
@@ -259,14 +271,33 @@
   const sliderToThreshold = v => MIN_T * Math.pow(MAX_T / MIN_T, v / 100)
   const thresholdToSlider = t => Math.round(Math.log(t / MIN_T) / Math.log(MAX_T / MIN_T) * 100)
   const thresholdToDb = t => (20 * Math.log10(Math.max(t, 0.0001))).toFixed(0)
+  let micAccessEnabled = true
+  let voiceInputEnabled = true
+  let prompterVisible = true
 
-  async function populateMics() {
+  function getMeterAudioConstraints() {
+    const audio = {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+      suppressLocalAudioPlayback: true,
+    }
+    const deviceId = document.getElementById('mic-select').value
+    if (deviceId && deviceId !== 'default') audio.deviceId = { exact: deviceId }
+    return audio
+  }
+
+  async function populateMics(requestPermission = false) {
+    if (!micAccessEnabled) return
     try {
-      // Need permission first
-      const tmp = await navigator.mediaDevices.getUserMedia({ audio: true })
-      tmp.getTracks().forEach(t => t.stop())
-      const devices = await navigator.mediaDevices.enumerateDevices()
-      const mics = devices.filter(d => d.kind === 'audioinput')
+      let devices = await navigator.mediaDevices.enumerateDevices()
+      let mics = devices.filter(d => d.kind === 'audioinput')
+      if (requestPermission && (!mics.length || mics.every(d => !d.label))) {
+        const tmp = await navigator.mediaDevices.getUserMedia({ audio: getMeterAudioConstraints() })
+        tmp.getTracks().forEach(t => t.stop())
+        devices = await navigator.mediaDevices.enumerateDevices()
+        mics = devices.filter(d => d.kind === 'audioinput')
+      }
       const sel = document.getElementById('mic-select')
       sel.innerHTML = ''
       mics.forEach(d => {
@@ -281,8 +312,21 @@
     } catch(e) {}
   }
 
+  function updateMicUi() {
+    document.getElementById('mic-access-toggle').checked = micAccessEnabled
+    document.getElementById('autoscroll-toggle').checked = voiceInputEnabled
+    document.getElementById('autoscroll-toggle').disabled = !micAccessEnabled
+    document.getElementById('mic-select').disabled = !micAccessEnabled
+    document.getElementById('threshold-slider').disabled = !micAccessEnabled || !voiceInputEnabled
+    document.getElementById('mic-row').classList.toggle('disabled', !micAccessEnabled)
+  }
+
   document.getElementById('mic-select').addEventListener('change', e => {
     API.setConfig({ micDeviceId: e.target.value })
+    if (meterStream && micAccessEnabled) {
+      stopMeter()
+      startMeter()
+    }
   })
 
   async function init() {
@@ -295,8 +339,8 @@
     }
     const cfg = await API.getConfig()
     if (cfg) applyConfig(cfg)
-    await populateMics()
-    startMeter()
+    await populateMics(voiceInputEnabled)
+    if (voiceInputEnabled) startMeter()
   }
 
   function applyConfig(c) {
@@ -310,7 +354,10 @@
     document.getElementById('threshold-mark').style.left = tv + '%'
 
     document.getElementById('screenshare-toggle').checked = !!c.screenshareHidden
-    document.getElementById('autoscroll-toggle').checked = !c.autoScroll
+    micAccessEnabled = c.micAccessEnabled !== false
+    voiceInputEnabled = micAccessEnabled && !c.autoScroll
+    updateMicUi()
+    if (!micAccessEnabled || !voiceInputEnabled) stopMeter()
     document.getElementById('theme-toggle').checked = c.theme === 'light'
 
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === (c.mode || 'notch')))
@@ -344,7 +391,29 @@
     API.setConfig({ opacity: v / 100 })
   })
 
+  document.getElementById('mic-access-toggle').addEventListener('change', e => {
+    micAccessEnabled = e.target.checked
+    if (!micAccessEnabled) {
+      voiceInputEnabled = false
+      stopMeter()
+      updateMicUi()
+      API.setConfig({ micAccessEnabled: false, autoScroll: true })
+      return
+    }
+    updateMicUi()
+    API.setConfig({ micAccessEnabled: true })
+  })
+
   document.getElementById('autoscroll-toggle').addEventListener('change', e => {
+    if (e.target.checked && !micAccessEnabled) return
+    voiceInputEnabled = e.target.checked
+    updateMicUi()
+    if (voiceInputEnabled && prompterVisible) {
+      populateMics(true)
+      startMeter()
+    } else {
+      stopMeter()
+    }
     API.setConfig({ autoScroll: !e.target.checked })
   })
 
@@ -384,23 +453,19 @@
     if (e.metaKey && e.altKey && e.code === 'KeyI') API.openDevTools()
   })
 
-  let meterStream = null, meterInterval = null
+  let meterStream = null, meterInterval = null, meterAudioCtx = null
 
   async function startMeter() {
+    if (!micAccessEnabled || !voiceInputEnabled) return
     if (meterStream) return
     try {
       meterStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          suppressLocalAudioPlayback: true,
-        }
+        audio: getMeterAudioConstraints()
       })
-      const ctx = new AudioContext()
-      const analyser = ctx.createAnalyser()
+      meterAudioCtx = new AudioContext()
+      const analyser = meterAudioCtx.createAnalyser()
       analyser.fftSize = 1024
-      ctx.createMediaStreamSource(meterStream).connect(analyser)
+      meterAudioCtx.createMediaStreamSource(meterStream).connect(analyser)
       const data = new Float32Array(analyser.fftSize)
       const fill = document.getElementById('meter-fill')
       meterInterval = setInterval(() => {
@@ -418,14 +483,16 @@
   function stopMeter() {
     if (meterInterval) { clearInterval(meterInterval); meterInterval = null }
     if (meterStream) { meterStream.getTracks().forEach(t => t.stop()); meterStream = null }
+    if (meterAudioCtx) { meterAudioCtx.close(); meterAudioCtx = null }
     document.getElementById('meter-fill').style.width = '0%'
   }
 
   document.getElementById('prompter-toggle').addEventListener('change', async e => {
     const isVisible = await API.togglePrompter()
+    prompterVisible = isVisible
     e.target.checked = isVisible
     document.getElementById('settings-body').classList.toggle('hidden', !isVisible)
-    if (isVisible) startMeter(); else stopMeter()
+    if (isVisible && voiceInputEnabled) startMeter(); else stopMeter()
   })
 
   init()

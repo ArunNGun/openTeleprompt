@@ -265,6 +265,7 @@ body.mode-classic #island.state-read {
 }
 .mic-ring.paused { border-color: #f59e0b; animation: none; }
 .mic-ring.error  { border-color: #ef4444; animation: none; }
+.mic-ring.off    { border-color: #64748b; animation: none; }
 @keyframes ring-pulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50%       { transform: scale(1.15); opacity: 0.7; }
@@ -275,6 +276,7 @@ body.mode-classic #island.state-read {
 }
 .mic-ring.paused .mic-core { background: #f59e0b; }
 .mic-ring.error  .mic-core { background: #ef4444; }
+.mic-ring.off    .mic-core { background: #64748b; }
 #status-text {
   font-size: 9px; font-weight: 600;
   color: rgba(255,255,255,0.3); letter-spacing: 0.04em;

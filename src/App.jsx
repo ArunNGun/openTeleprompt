@@ -40,6 +40,7 @@ export default function App() {
         opacity:     cfg.opacity     ?? 1,
         threshold:   cfg.threshold   ?? 0.018,
         autoScroll:  cfg.autoScroll  ?? cfg.auto_scroll  ?? false,
+        micAccessEnabled: cfg.micAccessEnabled ?? cfg.mic_access_enabled ?? true,
         micDeviceId: cfg.micDeviceId ?? cfg.mic_device_id ?? 'default',
       })
       API.setIgnoreMouse(false)
@@ -53,20 +54,21 @@ export default function App() {
       if (!cfg) return
       const patch = {}
       const keys = ['mode','theme','scrollSpeed','scroll_speed','opacity','threshold',
-                    'autoScroll','auto_scroll','micDeviceId','mic_device_id','fontSize','font_size']
+                    'autoScroll','auto_scroll','micAccessEnabled','mic_access_enabled',
+                    'micDeviceId','mic_device_id','fontSize','font_size']
       keys.forEach(k => { if (cfg[k] !== undefined) patch[k] = cfg[k] })
       // Normalise snake_case → camelCase
       if (patch.scroll_speed  !== undefined) { patch.scrollSpeed  = patch.scroll_speed;  delete patch.scroll_speed }
       if (patch.auto_scroll   !== undefined) { patch.autoScroll   = patch.auto_scroll;   delete patch.auto_scroll  }
+      if (patch.mic_access_enabled !== undefined) { patch.micAccessEnabled = patch.mic_access_enabled; delete patch.mic_access_enabled }
       if (patch.mic_device_id !== undefined) { patch.micDeviceId  = patch.mic_device_id; delete patch.mic_device_id }
       if (patch.font_size     !== undefined) { patch.fontSize     = patch.font_size;     delete patch.font_size     }
       if (Object.keys(patch).length) setConfig(patch)
     })
 
-    // Probe mic permission once so browser doesn't ask mid-session
-    navigator.mediaDevices?.getUserMedia({ audio: true })
-      .then(s => s.getTracks().forEach(t => t.stop()))
-      .catch(() => {})
+    // Do not probe the microphone on launch. On macOS/Bluetooth headsets,
+    // opening any input stream can switch the system audio route and mute
+    // meeting audio. The mic is requested only when voice input is active.
   }, [])
 
   // ── Side-effects from config ───────────────────────────────

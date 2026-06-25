@@ -43,6 +43,7 @@ const state = {
 
 let VOLUME_THRESHOLD = 0.018
 let autoScroll = false
+let micAccessEnabled = true
 const SILENCE_DELAY_MS = 400
 const SCROLL_SPEED_BASE = 0.1
 let fontSize = 16  // default font size in px
@@ -188,6 +189,14 @@ function scrollLoop(timestamp) {
 
 // ── Mic ────────────────────────────────────────────────────
 async function startMic() {
+  if (!micAccessEnabled) {
+    state.isRunning = true
+    state.isSpeaking = false
+    setMicState(autoScroll ? 'auto' : 'off', autoScroll ? 'Auto' : 'Mic off')
+    requestAnimationFrame(scrollLoop)
+    return
+  }
+
   // In auto-scroll mode — skip mic, just scroll
   if (autoScroll) {
     state.isRunning = true
@@ -313,7 +322,7 @@ function stopMic() {
 
 function setMicState(type, label) {
   statusText.textContent = label
-  micRing.className = 'mic-ring' + (type === 'listening' || type === 'auto' ? '' : type === 'error' ? ' error' : ' paused')
+  micRing.className = 'mic-ring' + (type === 'listening' || type === 'auto' ? '' : type === 'error' ? ' error' : type === 'off' ? ' off' : ' paused')
   idleDot.className = 'idle-dot' + (type === 'listening' || type === 'auto' ? ' listening' : type === 'waiting' ? '' : ' paused')
   // Auto-scroll: purple tint
   micRing.style.borderColor = type === 'auto' ? '#818cf8' : ''
@@ -408,7 +417,22 @@ API.onConfigUpdate((cfg) => {
   }
   if (cfg.threshold !== undefined) VOLUME_THRESHOLD = cfg.threshold
   if (cfg.mode !== undefined) setupMouseBehavior(cfg.mode)
-  if (cfg.autoScroll !== undefined) autoScroll = cfg.autoScroll
+  if (cfg.micAccessEnabled !== undefined) {
+    const changed = micAccessEnabled !== cfg.micAccessEnabled
+    micAccessEnabled = cfg.micAccessEnabled
+    if (changed && state.isRunning) {
+      stopMic()
+      setTimeout(() => startMic(), 200)
+    }
+  }
+  if (cfg.autoScroll !== undefined) {
+    const changed = autoScroll !== cfg.autoScroll
+    autoScroll = cfg.autoScroll
+    if (changed && state.isRunning) {
+      stopMic()
+      setTimeout(() => startMic(), 200)
+    }
+  }
   if (cfg.opacity !== undefined) document.documentElement.style.opacity = cfg.opacity
 
   if (cfg.micDeviceId !== undefined && state.isRunning) {
@@ -478,21 +502,13 @@ API.getConfig().then(cfg => {
   if (cfg && cfg.scrollSpeed) { const i = SPEEDS.indexOf(cfg.scrollSpeed); if (i !== -1) setSpeed(i) }
   if (cfg && cfg.threshold) VOLUME_THRESHOLD = cfg.threshold
   if (cfg && cfg.autoScroll) autoScroll = cfg.autoScroll
+  if (cfg && cfg.micAccessEnabled !== undefined) micAccessEnabled = cfg.micAccessEnabled
   if (cfg && cfg.opacity !== undefined) document.documentElement.style.opacity = cfg.opacity
   setupMouseBehavior((cfg && cfg.mode) || 'notch')
 })
 
-// Probe mic permission on load so macOS shows the permission dialog immediately
-// instead of waiting until the user hits Go
-;(async () => {
-  try {
-    console.log('Probing mic permission...')
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    console.log('Mic probe success:', stream)
-    stream.getTracks().forEach(t => t.stop())
-  } catch(e) {
-    console.error('Mic probe failed:', e.name, e.message, e)
-  }
-})()
+// Do not probe the microphone on launch. On macOS/Bluetooth headsets,
+// opening any input stream can switch the system audio route and mute
+// meeting audio. The mic is requested only when voice input is active.
 
 showView('idle')

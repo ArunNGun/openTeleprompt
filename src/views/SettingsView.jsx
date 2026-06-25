@@ -26,6 +26,7 @@ export default function SettingsView() {
   const [prompterVisible, setPrompterVisible] = useState(true)
   const [mode, setMode] = useState('notch')
   const [opacity, setOpacity] = useState(100)
+  const [micAccessEnabled, setMicAccessEnabled] = useState(true)
   const [voiceInput, setVoiceInput] = useState(true)
   const [screenshare, setScreenshare] = useState(false)
   const [theme, setTheme] = useState('dark')
@@ -36,9 +37,12 @@ export default function SettingsView() {
   const [micId, setMicId] = useState('default')
   const [meterPct, setMeterPct] = useState(0)
   const [meterActive, setMeterActive] = useState(false)
+  const [configLoaded, setConfigLoaded] = useState(false)
 
   const panelRef = useRef(null)
   const meterStreamRef = useRef(null)
+  const meterAudioCtxRef = useRef(null)
+  const meterDeviceIdRef = useRef(null)
   const meterIntervalRef = useRef(null)
 
   // Auto-resize window to panel height
@@ -59,9 +63,8 @@ export default function SettingsView() {
         applyConfig(cfg)
         document.documentElement.setAttribute('data-theme', cfg.theme || 'dark')
       }
+      setConfigLoaded(true)
     })
-    populateMics()
-    startMeter()
 
     API.onConfigUpdate(applyConfig)
 
@@ -82,10 +85,25 @@ export default function SettingsView() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!configLoaded) return
+    if (micAccessEnabled) populateMics({ requestPermission: voiceInput })
+  }, [configLoaded, micAccessEnabled, voiceInput])
+
+  useEffect(() => {
+    if (!configLoaded) return
+    if (prompterVisible && micAccessEnabled && voiceInput) startMeter(micId)
+    else stopMeter()
+  }, [configLoaded, prompterVisible, micAccessEnabled, voiceInput, micId])
+
   function applyConfig(c) {
     if (c.mode)         setMode(c.mode)
     if (c.opacity != null) setOpacity(Math.round(c.opacity * 100))
-    if (c.autoScroll != null) setVoiceInput(!c.autoScroll)
+    const nextMicAccess = c.micAccessEnabled !== false
+    if (c.micAccessEnabled != null) setMicAccessEnabled(nextMicAccess)
+    if (c.autoScroll != null || c.micAccessEnabled != null) {
+      setVoiceInput(nextMicAccess && !c.autoScroll)
+    }
     if (c.screenshareHidden != null) setScreenshare(!!c.screenshareHidden)
     if (c.theme) {
       setTheme(c.theme)
@@ -102,12 +120,20 @@ export default function SettingsView() {
     if (c.micDeviceId)  setMicId(c.micDeviceId)
   }
 
-  async function populateMics() {
+  async function populateMics({ requestPermission = false } = {}) {
+    if (!micAccessEnabled) return
     try {
-      const tmp = await navigator.mediaDevices.getUserMedia({ audio: true })
-      tmp.getTracks().forEach(t => t.stop())
-      const devices = await navigator.mediaDevices.enumerateDevices()
-      const found = devices.filter(d => d.kind === 'audioinput').map(d => ({
+      let devices = await navigator.mediaDevices.enumerateDevices()
+      let audioInputs = devices.filter(d => d.kind === 'audioinput')
+
+      if (requestPermission && (!audioInputs.length || audioInputs.every(d => !d.label))) {
+        const tmp = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints(micId) })
+        tmp.getTracks().forEach(t => t.stop())
+        devices = await navigator.mediaDevices.enumerateDevices()
+        audioInputs = devices.filter(d => d.kind === 'audioinput')
+      }
+
+      const found = audioInputs.map(d => ({
         deviceId: d.deviceId,
         label: d.label || `Microphone (${d.deviceId.slice(0, 8)})`,
       }))
@@ -115,13 +141,27 @@ export default function SettingsView() {
     } catch(e) {}
   }
 
-  async function startMeter() {
-    if (meterStreamRef.current) return
+  function getAudioConstraints(deviceId = micId) {
+    const audio = {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+    }
+    if (deviceId && deviceId !== 'default') audio.deviceId = { exact: deviceId }
+    return audio
+  }
+
+  async function startMeter(deviceId = micId) {
+    if (!micAccessEnabled || !voiceInput) return
+    if (meterStreamRef.current && meterDeviceIdRef.current === deviceId) return
+    stopMeter()
     try {
       meterStreamRef.current = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        audio: getAudioConstraints(deviceId),
       })
       const ctx = new AudioContext()
+      meterAudioCtxRef.current = ctx
+      meterDeviceIdRef.current = deviceId
       const analyser = ctx.createAnalyser()
       analyser.fftSize = 1024
       ctx.createMediaStreamSource(meterStreamRef.current).connect(analyser)
@@ -135,12 +175,16 @@ export default function SettingsView() {
         setMeterPct(pct)
         setMeterActive(rms > sliderToThreshold(thresholdSlider))
       }, 32)
-    } catch(e) {}
+    } catch(e) {
+      meterDeviceIdRef.current = null
+    }
   }
 
   function stopMeter() {
     if (meterIntervalRef.current) { clearInterval(meterIntervalRef.current); meterIntervalRef.current = null }
     if (meterStreamRef.current) { meterStreamRef.current.getTracks().forEach(t => t.stop()); meterStreamRef.current = null }
+    if (meterAudioCtxRef.current) { meterAudioCtxRef.current.close(); meterAudioCtxRef.current = null }
+    meterDeviceIdRef.current = null
     setMeterPct(0)
     setMeterActive(false)
   }
@@ -148,7 +192,6 @@ export default function SettingsView() {
   async function handlePrompterToggle(checked) {
     const isVisible = await API.togglePrompter()
     setPrompterVisible(isVisible)
-    if (isVisible) startMeter(); else stopMeter()
   }
 
   function handleMode(m) {
@@ -161,7 +204,19 @@ export default function SettingsView() {
     API.setConfig({ opacity: v / 100 })
   }
 
+  function handleMicAccess(checked) {
+    setMicAccessEnabled(checked)
+    if (!checked) {
+      setVoiceInput(false)
+      stopMeter()
+      API.setConfig({ micAccessEnabled: false, autoScroll: true })
+      return
+    }
+    API.setConfig({ micAccessEnabled: true })
+  }
+
   function handleVoiceInput(checked) {
+    if (checked && !micAccessEnabled) return
     setVoiceInput(checked)
     API.setConfig({ autoScroll: !checked })
   }
@@ -190,6 +245,7 @@ export default function SettingsView() {
   }
 
   function handleMic(deviceId) {
+    if (!micAccessEnabled) return
     setMicId(deviceId)
     API.setConfig({ micDeviceId: deviceId })
   }
@@ -237,9 +293,23 @@ export default function SettingsView() {
 
           <Divider />
 
+          {/* Microphone access */}
+          <Row label="Microphone Access">
+            <Toggle checked={micAccessEnabled} onChange={handleMicAccess} />
+          </Row>
+          <div className="s-help">
+            Off means OpenTeleprompter never opens an audio input stream.
+          </div>
+
+          <Divider />
+
           {/* Voice Input */}
           <Row label="Voice Input">
-            <Toggle checked={voiceInput} onChange={handleVoiceInput} />
+            <Toggle
+              checked={voiceInput}
+              disabled={!micAccessEnabled}
+              onChange={handleVoiceInput}
+            />
           </Row>
 
           <Divider />
@@ -259,9 +329,14 @@ export default function SettingsView() {
           <Divider />
 
           {/* Microphone */}
-          <div className="s-row s-col">
+          <div className={`s-row s-col${!micAccessEnabled ? ' s-disabled' : ''}`}>
             <span className="s-label">Microphone</span>
-            <select className="s-select" value={micId} onChange={e => handleMic(e.target.value)}>
+            <select
+              className="s-select"
+              value={micId}
+              disabled={!micAccessEnabled}
+              onChange={e => handleMic(e.target.value)}
+            >
               {mics.map(m => <option key={m.deviceId} value={m.deviceId}>{m.label}</option>)}
             </select>
           </div>
@@ -277,12 +352,16 @@ export default function SettingsView() {
           <Divider />
 
           {/* Voice Sensitivity */}
-          <Row label="Voice Sensitivity" val={thresholdToDb(threshold) + ' dB'}>
+          <Row
+            label="Voice Sensitivity"
+            val={micAccessEnabled && voiceInput ? thresholdToDb(threshold) + ' dB' : 'Off'}
+          >
             <div className="s-meter">
               <div className="s-meter-fill" style={{ width: meterPct.toFixed(1) + '%', background: meterActive ? '#22c55e' : 'rgba(255,255,255,0.15)' }} />
               <div className="s-meter-mark" style={{ left: thresholdPct }} />
             </div>
             <input type="range" className="s-slider" min="0" max="100" step="1"
+              disabled={!micAccessEnabled || !voiceInput}
               value={thresholdSlider} onChange={e => handleThresholdSlider(+e.target.value)} />
           </Row>
 
@@ -329,10 +408,15 @@ function Row({ label, val, children }) {
   )
 }
 
-function Toggle({ checked, onChange }) {
+function Toggle({ checked, disabled = false, onChange }) {
   return (
-    <label className="s-switch">
-      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} />
+    <label className={`s-switch${disabled ? ' disabled' : ''}`}>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={e => onChange(e.target.checked)}
+      />
       <span className="s-sw" />
     </label>
   )
