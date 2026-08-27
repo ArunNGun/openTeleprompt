@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppStore } from './store'
 import { API } from './lib/api'
 import IdleView from './views/IdleView'
@@ -67,7 +67,7 @@ export default function App() {
     navigator.mediaDevices?.getUserMedia({ audio: true })
       .then(s => s.getTracks().forEach(t => t.stop()))
       .catch(() => {})
-  }, [])
+  }, [setConfig, setScripts])
 
   // ── Side-effects from config ───────────────────────────────
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function App() {
   useEffect(() => {
     document.body.classList.toggle('mode-classic', isClassic)
     API.setIgnoreMouse(false)
-  }, [config.mode])
+  }, [config.mode, isClassic])
 
   useEffect(() => {
     document.documentElement.style.opacity = config.opacity ?? 1
@@ -91,7 +91,7 @@ export default function App() {
                 : isHovered       ? sizes.idleHover
                 : sizes.idle
     API.resizePrompter({ width: size.w, height: size.h })
-  }, [view, isHovered, config.mode])
+  }, [view, isHovered, config.mode, isClassic])
 
   // ── Event handlers ─────────────────────────────────────────
   function handleMouseEnter() {

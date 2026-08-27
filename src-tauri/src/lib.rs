@@ -263,21 +263,6 @@ fn apply_screenshare_mode(window: &WebviewWindow, hidden: bool) {
 
 // ── Commands ───────────────────────────────────────────────
 
-// Called from JS after window mounts — runs on Tauri's main thread dispatcher
-#[tauri::command]
-fn elevate_notch_window(window: WebviewWindow) -> String {
-    let cfg = window.app_handle()
-        .try_state::<AppState>()
-        .map(|s| s.config.lock().unwrap().mode.clone())
-        .unwrap_or_default();
-    eprintln!("[notch-cmd] called, mode={cfg}");
-    if cfg != "classic" {
-        // elevate_to_notch_level now handles both level=27 AND repositioning to screen top
-        elevate_to_notch_level(&window);
-    }
-    format!("ok:mode={cfg}")
-}
-
 #[tauri::command]
 fn get_config(state: State<AppState>) -> Config {
     state.config.lock().unwrap().clone()
@@ -567,6 +552,8 @@ fn create_prompter_window(app: &AppHandle) {
     apply_screenshare_mode(&window, cfg.screenshare_hidden);
 
     // Elevate window level above menu bar (NSWindow APIs — must be on main thread).
+    // Native window creation owns notch elevation; the renderer does not invoke
+    // a second IPC path.
     // switch_mode now dispatches create_prompter_window to main thread, so this is safe.
     eprintln!("[OT] is_notch={is_notch}, mode={}", cfg.mode);
     if is_notch {
@@ -666,7 +653,7 @@ pub fn run() {
             hide_settings, start_drag,
             set_movable, move_window, get_window_pos,
             close_welcome, open_url, open_settings,
-            focus_prompter, elevate_notch_window,
+            focus_prompter,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

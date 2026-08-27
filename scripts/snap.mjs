@@ -16,7 +16,6 @@ import { createHash } from 'crypto'
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const BASE_URL = 'http://localhost:1420'
 const SNAP_DIR = path.resolve('.snapshots/notch')
-const DIFF_THRESHOLD = 100 // max pixels allowed to differ
 
 // The 6 notch states we care about
 const STATES = [

@@ -80,6 +80,8 @@ export default function SettingsView() {
       window.removeEventListener('blur', onBlur)
       stopMeter()
     }
+    // Mount-once: load config, enumerate mics, and start the live meter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function applyConfig(c) {
@@ -112,7 +114,7 @@ export default function SettingsView() {
         label: d.label || `Microphone (${d.deviceId.slice(0, 8)})`,
       }))
       if (found.length) setMics(found)
-    } catch(e) {}
+    } catch {}
   }
 
   async function startMeter() {
@@ -135,7 +137,7 @@ export default function SettingsView() {
         setMeterPct(pct)
         setMeterActive(rms > sliderToThreshold(thresholdSlider))
       }, 32)
-    } catch(e) {}
+    } catch {}
   }
 
   function stopMeter() {
@@ -145,7 +147,7 @@ export default function SettingsView() {
     setMeterActive(false)
   }
 
-  async function handlePrompterToggle(checked) {
+  async function handlePrompterToggle() {
     const isVisible = await API.togglePrompter()
     setPrompterVisible(isVisible)
     if (isVisible) startMeter(); else stopMeter()

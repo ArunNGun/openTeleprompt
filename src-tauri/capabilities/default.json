@@ -27,7 +27,6 @@
     "core:webview:default",
     "core:event:default",
     "core:app:default",
-    "global-shortcut:default",
     "global-shortcut:allow-register",
     "global-shortcut:allow-register-all",
     "global-shortcut:allow-unregister",

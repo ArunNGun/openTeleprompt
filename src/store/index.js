@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export const useAppStore = create((set, get) => ({
+export const useAppStore = create((set) => ({
   view: 'idle', // 'idle' | 'edit' | 'read'
   setView: (view) => set({ view }),
 

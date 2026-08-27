@@ -27,10 +27,9 @@ export default function EditView() {
   const {
     setView, scripts, setScripts,
     currentScriptIndex, setCurrentScriptIndex,
-    setScriptText, setScriptDoc, config,
+    setScriptText, setScriptDoc,
   } = useAppStore()
 
-  const isClassic = config?.mode === 'classic'
   const [stats, setStats] = useState('')
 
   const editor = useEditor({
@@ -44,7 +43,9 @@ export default function EditView() {
     },
   })
 
-  // Load script when editor is ready
+  // Load the current script once the editor instance is ready. Intentionally
+  // keyed to `editor` only — re-running on scripts/currentScriptIndex changes
+  // would reset the editor content and clobber in-progress edits.
   useEffect(() => {
     if (!editor) return
     const script = scripts[currentScriptIndex]
@@ -54,7 +55,10 @@ export default function EditView() {
     } catch {
       editor.commands.setContent(`<p>${script.text || ''}</p>`)
     }
+    // Priming the stats display from the loaded script is a deliberate one-time sync.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStats(computeStats(script.text || ''))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor])
 
   const saveCurrentScript = useCallback(() => {
@@ -72,7 +76,7 @@ export default function EditView() {
     }
     setScripts(updated)
     API.saveScripts(updated)
-  }, [editor, scripts, currentScriptIndex])
+  }, [editor, scripts, currentScriptIndex, setCurrentScriptIndex, setScripts])
 
   function handleStart() {
     if (!editor) return

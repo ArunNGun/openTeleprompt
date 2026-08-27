@@ -33,10 +33,8 @@ export default function ReadView() {
   const scriptTextRef = useRef(null)
   const markerRefs = useRef({})     // token index → DOM el
   const firedMarkers = useRef(new Set()) // indices already fired
-  const speedIdxSetRef = useRef(null) // ref to setSpeedIdx for use inside RAF
   const micEngineRef = useRef(null)
   const silenceTimer = useRef(null)
-  const isCountingDownRef = useRef(false)
 
   // Keep refs in sync
   useEffect(() => { isPausedRef.current = isPaused }, [isPaused])
@@ -51,6 +49,8 @@ export default function ReadView() {
       const i = SPEEDS.reduce((best, s, idx) =>
         Math.abs(s - config.scrollSpeed) < Math.abs(SPEEDS[best] - config.scrollSpeed) ? idx : best
       , 0)
+      // Syncing local speed index from the settings window is a deliberate external→state sync.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSpeedIdx(i)
     }
     // Threshold update
@@ -162,10 +162,17 @@ export default function ReadView() {
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      // silenceTimer holds a timer id, not a DOM node — clearing whatever is
+      // pending at teardown is exactly what we want here.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       if (silenceTimer.current) clearTimeout(silenceTimer.current)
       micEngineRef.current?.stop()
       unlistenShortcut?.()
     }
+    // Mount-once: sets up the scroll RAF, mic engine, and shortcut listener.
+    // handleDone is intentionally omitted — including it would tear down and
+    // restart the mic/RAF on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function togglePause() {
