@@ -9,6 +9,7 @@
     "dev:react": "vite",
     "build": "tauri build",
     "build:frontend": "vite build",
+    "test": "node --test tests/*.test.mjs",
     "build:win": "tauri build --target x86_64-pc-windows-msvc",
     "snap:save": "node scripts/snap.mjs save",
     "snap:check": "node scripts/snap.mjs check"
@@ -20,6 +21,7 @@
   },
   "dependencies": {
     "@tiptap/extension-color": "^3.22.3",
+    "@tiptap/extension-image": "3.22.3",
     "@tiptap/extension-text-style": "^3.22.3",
     "@tiptap/pm": "^3.22.3",
     "@tiptap/react": "^3.22.3",

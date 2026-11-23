@@ -234,6 +234,9 @@ export default function ReadView() {
         >
           {tokens.length > 0 ? tokens.map((token, i) => {
             if (token.type === 'newline') return <br key={i} />
+            if (token.type === 'image') return (
+              <img key={i} src={token.src} alt={token.alt} className="read-image" />
+            )
             if (token.type === 'marker') return (
               <span
                 key={i}

@@ -1,5 +1,5 @@
 // Converts Tiptap JSON doc → flat token array for word-by-word rendering
-// Token: { type: 'word'|'marker'|'newline', text, bold, color, marker }
+// Token: { type: 'word'|'marker'|'newline'|'image', text, bold, color, marker, src, alt }
 
 const MARKER_RE = /^\[(PAUSE|SLOW|BREATHE)\]$/i
 
@@ -8,6 +8,11 @@ export function tokenizeDoc(doc) {
 
   function walkNode(node) {
     if (!node) return
+
+    if (node.type === 'image') {
+      tokens.push({ type: 'image', src: node.attrs?.src || '', alt: node.attrs?.alt || '' })
+      return
+    }
 
     if (node.type === 'text') {
       const text = node.text || ''

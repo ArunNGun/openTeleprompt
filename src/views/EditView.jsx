@@ -1,10 +1,22 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
+import { Image } from '@tiptap/extension-image'
+import { insertImageNodes, readImageFiles } from '../lib/image'
 import { useAppStore } from '../store'
 import { API } from '../lib/api'
+
+function insertImagesIntoView(view, fileList, pos) {
+  const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'))
+  if (!files.length) return false
+
+  readImageFiles(files).then((images) => {
+    insertImageNodes(view, images, pos)
+  }).catch(() => undefined)
+  return true
+}
 
 const COLORS = [
   { label: 'White',  value: '#ffffff' },
@@ -33,11 +45,30 @@ export default function EditView() {
   const isClassic = config?.mode === 'classic'
   const [stats, setStats] = useState('')
 
+  const fileInputRef = useRef(null)
+
   const editor = useEditor({
-    extensions: [StarterKit, TextStyle, Color],
+    extensions: [StarterKit, TextStyle, Color, Image.configure({ allowBase64: true })],
     content: '<p></p>',
     editorProps: {
       attributes: { class: 'tiptap-editor', spellcheck: 'true' },
+      handlePaste(view, event) {
+        const files = event.clipboardData?.files
+        if (files?.length && Array.from(files).some((f) => f.type.startsWith('image/'))) {
+          event.preventDefault()
+          return insertImagesIntoView(view, files)
+        }
+        return false
+      },
+      handleDrop(view, event) {
+        const files = event.dataTransfer?.files
+        if (files?.length && Array.from(files).some((f) => f.type.startsWith('image/'))) {
+          event.preventDefault()
+          const coords = view.posAtCoords({ left: event.clientX, top: event.clientY })
+          return insertImagesIntoView(view, files, coords?.pos)
+        }
+        return false
+      },
     },
     onUpdate({ editor }) {
       setStats(computeStats(editor.getText()))
@@ -58,9 +89,8 @@ export default function EditView() {
   }, [editor])
 
   const saveCurrentScript = useCallback(() => {
-    if (!editor) return
+    if (!editor || editor.isEmpty) return
     const text = editor.getText().trim()
-    if (!text) return
     const name = text.split('\n')[0].substring(0, 40) || 'Untitled'
     const content = JSON.stringify(editor.getJSON())
     const updated = [...scripts]
@@ -75,9 +105,8 @@ export default function EditView() {
   }, [editor, scripts, currentScriptIndex])
 
   function handleStart() {
-    if (!editor) return
+    if (!editor || editor.isEmpty) return
     const text = editor.getText().trim()
-    if (!text) return
     saveCurrentScript()
     setScriptText(text)
     setScriptDoc(editor.getJSON())
@@ -124,6 +153,22 @@ export default function EditView() {
 
   function setColor(color) {
     editor?.chain().focus().setColor(color).run()
+  }
+
+  function insertImageFiles(fileList) {
+    const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'))
+    if (!files.length) return
+
+    readImageFiles(files).then((images) => {
+      if (!editor || editor.isDestroyed || editor.view.isDestroyed) return
+      editor.view.focus()
+      insertImageNodes(editor.view, images)
+    }).catch(() => undefined)
+  }
+
+  function handleImagePick(e) {
+    if (e.target.files?.length) insertImageFiles(e.target.files)
+    e.target.value = '' // allow re-selecting the same file
   }
 
   return (
@@ -184,6 +229,22 @@ export default function EditView() {
             title={`Insert ${m}`}
           >{m}</button>
         ))}
+
+        <div className="tb-divider" />
+
+        <button
+          className="tb-btn"
+          onMouseDown={(e) => { e.preventDefault(); fileInputRef.current?.click() }}
+          title="Insert image (or paste / drop into the editor)"
+        >🖼</button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          style={{ display: 'none' }}
+          onChange={handleImagePick}
+        />
       </div>
 
       {/* Editor */}
