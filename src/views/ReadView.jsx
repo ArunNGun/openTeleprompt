@@ -35,6 +35,9 @@ export default function ReadView() {
   const firedMarkers = useRef(new Set()) // indices already fired
   const speedIdxSetRef = useRef(null) // ref to setSpeedIdx for use inside RAF
   const micEngineRef = useRef(null)
+  const micDeviceIdRef = useRef(null)
+  const autoScrollRef = useRef(null)
+  const micAccessEnabledRef = useRef(null)
   const silenceTimer = useRef(null)
   const isCountingDownRef = useRef(false)
 
@@ -42,6 +45,42 @@ export default function ReadView() {
   useEffect(() => { isPausedRef.current = isPaused }, [isPaused])
   useEffect(() => { isSpeakingRef.current = isSpeaking }, [isSpeaking])
   useEffect(() => { speedIdxRef.current = speedIdx }, [speedIdx])
+
+  function stopMic() {
+    micEngineRef.current?.stop()
+    micEngineRef.current = null
+    isSpeakingRef.current = false
+    setIsSpeaking(false)
+  }
+
+  function startMic(micDeviceId) {
+    stopMic()
+    const engine = createMicEngine({
+      threshold: configRef.current.threshold,
+      onSpeaking: () => {
+        isSpeakingRef.current = true
+        setIsSpeaking(true)
+        setMicStatus('Speaking')
+      },
+      onSilence: () => {
+        isSpeakingRef.current = false
+        setIsSpeaking(false)
+        setMicStatus('Waiting…')
+      },
+      onError: () => setMicStatus('Mic error'),
+    })
+    micEngineRef.current = engine
+    setMicStatus('Waiting…')
+    engine.start(micDeviceId).then(ok => {
+      if (!ok && micEngineRef.current === engine) setMicStatus('Mic error')
+    })
+  }
+
+  function inactiveStatus() {
+    if (configRef.current.autoScroll) return 'Auto scroll'
+    if (configRef.current.micAccessEnabled === false) return 'Mic off'
+    return 'Waiting…'
+  }
 
   // React to live config changes while ReadView is mounted
   useEffect(() => {
@@ -55,19 +94,29 @@ export default function ReadView() {
     }
     // Threshold update
     micEngineRef.current?.setThreshold(config.threshold)
-    // If mic device changed, restart mic
-    if (configRef.current.micDeviceId !== config.micDeviceId) {
-      micEngineRef.current?.stop()
-      const engine = createMicEngine({
-        threshold: config.threshold,
-        onSpeaking: () => { isSpeakingRef.current = true; setIsSpeaking(true); setMicStatus('Speaking') },
-        onSilence:  () => { isSpeakingRef.current = false; setIsSpeaking(false); setMicStatus('Waiting…') },
-        onError:    () => setMicStatus('Mic error'),
-      })
-      micEngineRef.current = engine
-      engine.start(config.micDeviceId)
+
+    const voiceInputEnabled = config.micAccessEnabled !== false && !config.autoScroll
+    const micChanged = micDeviceIdRef.current !== config.micDeviceId
+    const modeChanged = autoScrollRef.current !== config.autoScroll
+    const accessChanged = micAccessEnabledRef.current !== config.micAccessEnabled
+
+    if (!voiceInputEnabled) {
+      stopMic()
+      setMicStatus(isPausedRef.current ? 'Paused' : inactiveStatus())
+    } else if (!micEngineRef.current || micChanged || modeChanged || accessChanged) {
+      startMic(config.micDeviceId)
     }
-  }, [config.threshold, config.micDeviceId, config.autoScroll, config.scrollSpeed])
+
+    micDeviceIdRef.current = config.micDeviceId
+    autoScrollRef.current = config.autoScroll
+    micAccessEnabledRef.current = config.micAccessEnabled
+  }, [
+    config.threshold,
+    config.micDeviceId,
+    config.autoScroll,
+    config.micAccessEnabled,
+    config.scrollSpeed,
+  ])
 
   // On mount: set content, start mic, start scroll loop
   useEffect(() => {
@@ -92,7 +141,7 @@ export default function ReadView() {
             setTimeout(() => {
               isPausedRef.current = false
               setIsPaused(false)
-              setMicStatus('Waiting…')
+              setMicStatus(inactiveStatus())
             }, 1200)
           } else if (marker === 'BREATHE') {
             isPausedRef.current = true
@@ -101,7 +150,7 @@ export default function ReadView() {
             setTimeout(() => {
               isPausedRef.current = false
               setIsPaused(false)
-              setMicStatus('Waiting…')
+              setMicStatus(inactiveStatus())
             }, 2500)
           } else if (marker === 'SLOW') {
             setSpeedIdx(prev => {
@@ -137,16 +186,6 @@ export default function ReadView() {
     }
     rafRef.current = requestAnimationFrame(loop)
 
-    // Start mic
-    const engine = createMicEngine({
-      threshold: configRef.current.threshold,
-      onSpeaking: () => { isSpeakingRef.current = true; setIsSpeaking(true); setMicStatus('Speaking') },
-      onSilence:  () => { isSpeakingRef.current = false; setIsSpeaking(false); setMicStatus('Waiting…') },
-      onError:    () => setMicStatus('Mic error'),
-    })
-    micEngineRef.current = engine
-    engine.start(configRef.current.micDeviceId)
-
     // Shortcuts — capture unlisten fn for cleanup
     let unlistenShortcut
     API.onShortcut((action) => {
@@ -163,7 +202,7 @@ export default function ReadView() {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       if (silenceTimer.current) clearTimeout(silenceTimer.current)
-      micEngineRef.current?.stop()
+      stopMic()
       unlistenShortcut?.()
     }
   }, [])
@@ -172,14 +211,14 @@ export default function ReadView() {
     const next = !isPausedRef.current
     isPausedRef.current = next
     setIsPaused(next)
-    setMicStatus(next ? 'Paused' : 'Waiting…')
+    setMicStatus(next ? 'Paused' : inactiveStatus())
     if (next) { isSpeakingRef.current = false; setIsSpeaking(false) }
   }
 
   function handleDone() {
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
     if (silenceTimer.current) clearTimeout(silenceTimer.current)
-    micEngineRef.current?.stop()
+    stopMic()
     API.setIgnoreMouse(false)
     setView('idle') // App.jsx resize effect handles window resize on view change
   }
@@ -197,7 +236,9 @@ export default function ReadView() {
 
   function handleMouseLeave() {
     isHoverPausedRef.current = false
-    if (!isPausedRef.current) setMicStatus(isSpeakingRef.current ? 'Speaking' : 'Waiting…')
+    if (!isPausedRef.current) {
+      setMicStatus(isSpeakingRef.current ? 'Speaking' : inactiveStatus())
+    }
   }
 
   function handleWheel(e) {
@@ -208,7 +249,12 @@ export default function ReadView() {
     scriptTextRef.current.style.transform = `translateY(${-scrollPosRef.current}px)`
   }
 
-  const micRingClass = `mic-ring${isSpeaking ? '' : ' paused'}`
+  const micRingClass = `mic-ring${
+    config.autoScroll ? ' auto'
+    : config.micAccessEnabled === false ? ' off'
+    : isSpeaking ? ''
+    : ' paused'
+  }`
 
   return (
     <div
